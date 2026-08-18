@@ -17,25 +17,6 @@ Evolvix AI Social Manager is an AI-powered social media management platform that
 * AI provider support
 * ML-based engagement prediction planned for V2
 
-┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────────┐
-│   Web    │───▶│   API    │───▶│  Worker  │───▶│ Orchestrator │
-│ (Next.js)│    │(Express) │    │ (BullMQ) │    │  + Agents    │
-└──────────┘    └──────────┘    └──────────┘    └──────┬───────┘
-                                                         │
-                          ┌──────────────────────────────┼───────────────────────┐
-                          ▼                               ▼                       ▼
-                    ┌───────────┐               ┌──────────────────┐    ┌─────────────────┐
-                    │ AI Gateway│──▶ LLM/Vision  │  Design Engine    │    │ Social Adapters  │
-                    │ (routing, │    /Image APIs │ (templates + AI   │    │ (official APIs)  │
-                    │ cache,    │               │  images + QA)      │    │                  │
-                    │ failover) │               └──────────────────┘    └─────────────────┘
-                    └───────────┘
-                          │
-                          ▼
-               ┌────────────────────┐
-               │ PostgreSQL+pgvector│  ◀── brand memory / RAG, tenant data, analytics
-               │ + Redis            │
-               └────────────────────┘
 ## 🛠️ Technologies
 
 ### Backend
