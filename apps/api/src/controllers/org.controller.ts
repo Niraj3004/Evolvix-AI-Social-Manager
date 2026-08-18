@@ -8,9 +8,9 @@ export const createOrgHandler = async (req: Request, res: Response) => {
     return sendError(res, 'Unauthorized', 401);
   }
 
-  const parsed = createOrgSchema.parse(req);
+  const parsed = createOrgSchema.parse(req.body);
   try {
-    const result = await createOrganization(req.user.userId, parsed.body.name);
+    const result = await createOrganization(req.user.userId, parsed.name);
     sendSuccess(res, result, 'Organization created successfully', 201);
   } catch (error: any) {
     sendError(res, error.message, 400);

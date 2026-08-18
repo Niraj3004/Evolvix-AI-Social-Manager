@@ -5,9 +5,9 @@ import { registerSchema, loginSchema, refreshSchema } from '../validations/auth.
 import { verifyRefreshToken } from '../utils/jwt';
 
 export const registerHandler = async (req: Request, res: Response) => {
-  const parsed = registerSchema.parse(req);
+  const parsed = registerSchema.parse(req.body);
   try {
-    const result = await register(parsed.body.email, parsed.body.password);
+    const result = await register(parsed.email, parsed.password);
     sendSuccess(res, result, 'User registered successfully', 201);
   } catch (error: any) {
     sendError(res, error.message, 400);
@@ -15,9 +15,9 @@ export const registerHandler = async (req: Request, res: Response) => {
 };
 
 export const loginHandler = async (req: Request, res: Response) => {
-  const parsed = loginSchema.parse(req);
+  const parsed = loginSchema.parse(req.body);
   try {
-    const result = await login(parsed.body.email, parsed.body.password, parsed.body.orgId);
+    const result = await login(parsed.email, parsed.password, parsed.orgId);
     sendSuccess(res, result, 'Login successful');
   } catch (error: any) {
     sendError(res, error.message, 401);
@@ -25,9 +25,9 @@ export const loginHandler = async (req: Request, res: Response) => {
 };
 
 export const refreshHandler = async (req: Request, res: Response) => {
-  const parsed = refreshSchema.parse(req);
+  const parsed = refreshSchema.parse(req.body);
   try {
-    const decoded = verifyRefreshToken(parsed.body.refreshToken);
+    const decoded = verifyRefreshToken(parsed.refreshToken);
     const result = await refresh(decoded.userId);
     sendSuccess(res, result, 'Token refreshed');
   } catch (error: any) {

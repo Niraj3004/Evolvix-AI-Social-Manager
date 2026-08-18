@@ -1,22 +1,16 @@
 import { z } from 'zod';
 
 export const registerSchema = z.object({
-  body: z.object({
-    email: z.string().email(),
-    password: z.string().min(8),
-  }),
+  email: z.string().email(),
+  password: z.string().min(8),
 });
 
 export const loginSchema = z.object({
-  body: z.object({
-    email: z.string().email(),
-    password: z.string(),
-    orgId: z.string().uuid().optional(),
-  }),
+  email: z.string().email(),
+  password: z.string(),
+  orgId: z.string().uuid().optional(),
 });
 
 export const refreshSchema = z.object({
-  body: z.object({
-    refreshToken: z.string(),
-  }),
+  refreshToken: z.string(),
 });
