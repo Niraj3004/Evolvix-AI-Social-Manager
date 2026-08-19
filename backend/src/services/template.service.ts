@@ -6,7 +6,7 @@ import cloudinary from '../config/cloudinary';
 export class TemplateService {
   private templatesDir = path.join(__dirname, '../templates');
 
-  async renderAndUpload(topic: string, caption: string, brandColor: string, brandName: string, backgroundImageUrl?: string): Promise<string> {
+  async renderAndUpload(topic: string, caption: string, brandColor: string, brandName: string, backgroundImageUrl?: string, logoUrl?: string, phone?: string, website?: string): Promise<string> {
     try {
       // 1. Load the template
       const templateName = backgroundImageUrl ? 'social-post-image.svg' : 'social-post.svg';
@@ -23,6 +23,23 @@ export class TemplateService {
         backgroundB64 = `data:${mimeType};base64,${buffer.toString('base64')}`;
       }
 
+      // If logo is provided, fetch it and convert to base64
+      let logoSvg = '';
+      if (logoUrl) {
+        try {
+          const logoResponse = await fetch(logoUrl);
+          const logoArrayBuffer = await logoResponse.arrayBuffer();
+          const logoBuffer = Buffer.from(logoArrayBuffer);
+          const logoMimeType = logoResponse.headers.get('content-type') || 'image/png';
+          const logoB64 = `data:${logoMimeType};base64,${logoBuffer.toString('base64')}`;
+          
+          // Add the logo to the top right corner
+          logoSvg = `<image href="${logoB64}" x="880" y="40" width="160" height="160" preserveAspectRatio="xMidYMid meet" />`;
+        } catch (err) {
+          console.warn('[TemplateService] Failed to fetch logoUrl, skipping logo overlay:', err);
+        }
+      }
+
       // 2. Escape special characters
       const safeCaption = caption.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       const safeTopic = topic.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -33,10 +50,13 @@ export class TemplateService {
         .replace(/{{BRAND_COLOR}}/g, brandColor || '#3b82f6')
         .replace(/{{TOPIC}}/g, safeTopic.substring(0, 25).toUpperCase()) 
         .replace(/{{CAPTION}}/g, safeCaption)
-        .replace(/{{BRAND_NAME}}/g, safeBrandName);
+        .replace(/{{BRAND_NAME}}/g, safeBrandName)
+        .replace(/{{PHONE}}/g, phone || '')
+        .replace(/{{WEBSITE}}/g, website || `www.${safeBrandName}.com`);
 
       if (backgroundImageUrl) {
         svgContent = svgContent.replace(/{{BACKGROUND_B64}}/g, backgroundB64);
+        svgContent = svgContent.replace(/{{LOGO_SVG}}/g, logoSvg);
       }
 
       // 4. Render to PNG buffer using sharp

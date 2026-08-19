@@ -8,10 +8,14 @@
   <!-- AI Generated Background Image -->
   <image href="{{BACKGROUND_B64}}" x="0" y="0" width="1080" height="1080" preserveAspectRatio="xMidYMid slice" />
   
+  <!-- Top Right Logo Overlay -->
+  {{LOGO_SVG}}
+  
   <!-- Minimal Brand Footer Overlay -->
   <rect x="40" y="960" width="1000" height="80" rx="40" fill="#ffffff" opacity="0.9" />
   <rect x="50" y="970" width="60" height="60" rx="30" fill="{{BRAND_COLOR}}" />
   <text x="130" y="1010" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#333333" text-anchor="start">@{{BRAND_NAME}}</text>
-  <text x="980" y="1010" font-family="Arial, sans-serif" font-size="24" font-weight="normal" fill="#666666" text-anchor="end">www.{{BRAND_NAME}}.com</text>
+  <text x="540" y="1010" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#333333" text-anchor="middle">{{PHONE}}</text>
+  <text x="980" y="1010" font-family="Arial, sans-serif" font-size="24" font-weight="normal" fill="#666666" text-anchor="end">{{WEBSITE}}</text>
   
 </svg>

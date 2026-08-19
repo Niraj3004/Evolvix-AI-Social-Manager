@@ -18,11 +18,15 @@ export class Orchestrator {
   ];
 
   async runContentJob(orgId: string, brandId: string, topic: string, platform: string): Promise<AgentState> {
+    const brand = await prisma.brand.findUnique({ where: { id: brandId } });
+    if (!brand) throw new Error('Brand not found');
+
     let state: AgentState = {
       orgId,
       brandId,
       topic,
-      platform
+      platform,
+      brandData: brand as any
     };
 
     for (const agent of this.chain) {
@@ -61,7 +65,16 @@ export class Orchestrator {
 
             // Brand the AI image by passing it into the Template Engine
             console.log(`[Orchestrator] Applying brand overlay to AI image...`);
-            const finalImageUrl = await templateService.renderAndUpload(postTopic, caption, brandColor, brandName, baseImageUrl);
+            const finalImageUrl = await templateService.renderAndUpload(
+              postTopic, 
+              caption, 
+              brandColor, 
+              brandName, 
+              baseImageUrl, 
+              state.brandData?.logoUrl, 
+              state.brandData?.phone, 
+              state.brandData?.website
+            );
             
             state.designData.imageUrl = finalImageUrl;
             console.log(`[Orchestrator] Branded AI image uploaded: ${finalImageUrl}`);

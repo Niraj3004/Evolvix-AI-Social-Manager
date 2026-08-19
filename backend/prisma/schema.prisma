@@ -84,6 +84,9 @@ model Brand {
   colors      String?
   fonts       String?
   goals       String?
+  logoUrl     String?
+  website     String?
+  phone       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
