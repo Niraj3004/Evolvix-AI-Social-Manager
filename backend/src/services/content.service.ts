@@ -82,12 +82,12 @@ export const updateContent = async (orgId: string, contentId: string, data: any)
   });
 };
 
-import { contentAgent } from '../agents/content.agent';
+import { orchestrator } from '../agents/orchestrator';
 
 export const generateContentFromAgent = async (orgId: string, brandId: string, prompt: string, platform: string) => {
-  const generatedData = await contentAgent.generatePlatformContent(orgId, brandId, prompt, platform);
+  const finalState = await orchestrator.runContentJob(orgId, brandId, prompt, platform);
   
-  const generatedBody = generatedData.caption;
+  const generatedBody = finalState.contentData?.caption || '';
   
   // Auto-save as DRAFT
   const content = await createContent(orgId, {
@@ -99,9 +99,11 @@ export const generateContentFromAgent = async (orgId: string, brandId: string, p
 
   return {
     content,
-    hooks: generatedData.hooks,
-    hashtags: generatedData.hashtags,
-    script: generatedData.script,
+    hooks: finalState.contentData?.hooks || [],
+    hashtags: finalState.contentData?.hashtags || [],
+    script: finalState.contentData?.script || '',
+    strategy: finalState.strategyData,
+    design: finalState.designData
   };
 };
 
