@@ -5,6 +5,12 @@ dotenv.config();
 
 const envSchema = z.object({
   PORT: z.string().default('3000'),
+  WEBHOOK_SECRET: z.string().default('fallback_secret'),
+  SMTP_HOST: z.string().default('smtp.resend.com'),
+  SMTP_PORT: z.string().transform(Number).default('465'),
+  SMTP_USER: z.string().default('resend'),
+  SMTP_PASS: z.string().default(''),
+  EMAIL_FROM: z.string().default('Evolvix AI <noreply@evolvix.ai>'),
   DATABASE_URL: z.string().url(),
   REDIS_URL: z.string().url(),
   JWT_SECRET: z.string().min(1),

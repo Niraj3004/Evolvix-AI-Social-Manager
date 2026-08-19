@@ -71,5 +71,17 @@ export const approvePayment = asyncErrorHandler(async (req: Request, res: Respon
     }
   });
 
+  // Fetch the user who made the payment (we'll fetch the owner of the org for simplicity)
+  const ownerMembership = await prisma.membership.findFirst({
+    where: { organizationId: payment.orgId, role: 'OWNER' },
+    include: { user: true }
+  });
+
+  if (ownerMembership && ownerMembership.user.email) {
+    import('../services/email.service').then(({ emailService }) => {
+      emailService.sendPaymentApprovedEmail(ownerMembership.user.email, 'PRO');
+    }).catch(console.error);
+  }
+
   sendSuccess(res, { payment: updatedPayment, subscription }, 'Payment approved and subscription activated');
 });

@@ -27,6 +27,13 @@ export const createManualPayment = asyncErrorHandler(async (req: Request, res: R
     }
   });
 
+  // Send async pending email to the user
+  if (req.user && req.user.email) {
+    import('../services/email.service').then(({ emailService }) => {
+      emailService.sendPaymentPendingEmail(req.user.email);
+    }).catch(console.error);
+  }
+
   sendSuccess(res, payment, 'Manual payment submitted and pending approval', 201);
 });
 

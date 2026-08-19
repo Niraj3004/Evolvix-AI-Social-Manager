@@ -140,6 +140,23 @@ const startWorkers = async () => {
           } catch (pubErr) {
             console.error('Redis pub error', pubErr);
           }
+
+          // Fetch org owner and send Post Published email
+          try {
+            const ownerMembership = await prisma.membership.findFirst({
+              where: { organizationId: post.orgId, role: 'OWNER' },
+              include: { user: true }
+            });
+
+            if (ownerMembership && ownerMembership.user.email) {
+              const { emailService } = require('../services/email.service');
+              // Optionally we can construct the post URL if we have it, for now we leave it empty
+              await emailService.sendPostPublishedEmail(ownerMembership.user.email, account.platform);
+            }
+          } catch (emailErr) {
+             console.error('Failed to send published email', emailErr);
+          }
+
         } catch (e) {
           console.error(`[Analytics Worker] Failed to fetch metrics for post ${post.id}:`, e);
         }

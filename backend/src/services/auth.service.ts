@@ -17,6 +17,11 @@ export const register = async (email: string, passwordRaw: string) => {
   const accessToken = generateAccessToken(payload);
   const refreshToken = generateRefreshToken(payload);
 
+  // Send async welcome email
+  import('../services/email.service').then(({ emailService }) => {
+    emailService.sendWelcomeEmail(user.email, user.email.split('@')[0]);
+  }).catch(console.error);
+
   return { user: { id: user.id, email: user.email }, accessToken, refreshToken };
 };
 
