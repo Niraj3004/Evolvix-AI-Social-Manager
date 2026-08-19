@@ -1,10 +1,12 @@
 generator client {
   provider = "prisma-client-js"
   output   = "../src/generated/client"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
+  provider   = "postgresql"
+  extensions = [vector]
 }
 
 enum Role {
@@ -35,10 +37,11 @@ model Organization {
   updatedAt   DateTime     @updatedAt
   memberships Membership[]
 
-  brands          Brand[]
-  brandAssets     BrandAsset[]
-  brandDocuments  BrandDocument[]
-  socialAccounts  SocialAccount[]
+  brands              Brand[]
+  brandAssets         BrandAsset[]
+  brandDocuments      BrandDocument[]
+  brandDocumentChunks BrandDocumentChunk[]
+  socialAccounts      SocialAccount[]
   oauthTokens     OAuthToken[]
   contents        Content[]
   contentVersions ContentVersion[]
@@ -85,9 +88,10 @@ model Brand {
   updatedAt   DateTime @updatedAt
 
   organization   Organization    @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  brandAssets    BrandAsset[]
-  brandDocuments BrandDocument[]
-  socialAccounts SocialAccount[]
+  brandAssets         BrandAsset[]
+  brandDocuments      BrandDocument[]
+  brandDocumentChunks BrandDocumentChunk[]
+  socialAccounts      SocialAccount[]
   contents       Content[]
   analytics      Analytics[]
 
@@ -119,8 +123,27 @@ model BrandDocument {
 
   brand        Brand        @relation(fields: [brandId], references: [id], onDelete: Cascade)
   organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  chunks       BrandDocumentChunk[]
 
   @@index([orgId])
+}
+
+model BrandDocumentChunk {
+  id              String   @id @default(uuid())
+  brandDocumentId String
+  orgId           String
+  brandId         String
+  content         String
+  embedding       Unsupported("vector")
+  createdAt       DateTime @default(now())
+
+  brandDocument BrandDocument @relation(fields: [brandDocumentId], references: [id], onDelete: Cascade)
+  organization  Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  brand         Brand         @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+  @@index([brandId])
+  @@index([brandDocumentId])
 }
 
 model SocialAccount {
