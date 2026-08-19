@@ -5,12 +5,14 @@ import { prisma } from '../config/db';
 
 export class AIGateway {
   private providers: LLMProvider[];
+  private imageProviders: LLMProvider[];
 
-  constructor(providers: LLMProvider[]) {
+  constructor(providers: LLMProvider[], imageProviders?: LLMProvider[]) {
     if (providers.length === 0) {
       throw new Error("AIGateway requires at least one provider");
     }
     this.providers = providers;
+    this.imageProviders = imageProviders && imageProviders.length > 0 ? imageProviders : providers;
   }
 
   private hashRequest(type: 'chat' | 'embed', input: any, opts?: any): string {
@@ -91,7 +93,7 @@ export class AIGateway {
 
     // 2. Try providers in turn
     let lastError: Error | null = null;
-    for (const provider of this.providers) {
+    for (const provider of this.imageProviders) {
       if (!provider.generateImage) continue;
 
       try {
@@ -110,7 +112,17 @@ export class AIGateway {
       }
     }
 
-    throw new Error(`All LLM providers failed for image gen. Last error: ${lastError?.message}`);
+    console.warn(`[AIGateway] All configured image providers failed (likely due to missing API keys/billing). Falling back to FREE public API (Pollinations.ai)...`);
+    
+    // 3. FREE FALLBACK (Pollinations.ai)
+    // This requires absolutely no API keys and generates 1080x1080 images for free.
+    // Note: Free models are slightly worse at spelling text than DALL-E 3, but great for visuals.
+    const freeUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1080&height=1080&nologo=true`;
+    
+    // Save to cache to prevent spamming the free API
+    await redis.set(cacheKey, freeUrl, 'EX', 86400);
+    
+    return freeUrl;
   }
 
   private async recordUsage(orgId: string, model: string, tokens: number, cost: number) {
