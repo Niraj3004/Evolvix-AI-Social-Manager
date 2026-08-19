@@ -13,3 +13,6 @@ export const createBrandSchema = z.object({
 });
 
 export const updateBrandSchema = createBrandSchema.partial();
+export const addDocumentSchema = z.object({
+  content: z.string().min(10, 'Document content must be at least 10 characters long'),
+});

@@ -56,3 +56,28 @@ export const deleteBrand = async (orgId: string, brandId: string) => {
     },
   });
 };
+
+export const addBrandAsset = async (orgId: string, brandId: string, url: string, type: string) => {
+  await getBrandById(orgId, brandId); // ensure existence and permission
+
+  return prisma.brandAsset.create({
+    data: {
+      brandId,
+      orgId,
+      url,
+      type,
+    },
+  });
+};
+
+export const addBrandDocument = async (orgId: string, brandId: string, content: string) => {
+  await getBrandById(orgId, brandId);
+
+  return prisma.brandDocument.create({
+    data: {
+      brandId,
+      orgId,
+      content,
+    },
+  });
+};

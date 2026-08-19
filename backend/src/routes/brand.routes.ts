@@ -35,4 +35,21 @@ router.delete(
   brandController.deleteBrand
 );
 
+import { upload } from '../middlewares/upload.middleware';
+
+// Upload a brand asset (logo, etc.)
+router.post(
+  '/:id/assets',
+  requireRole([Role.MANAGER, Role.ADMIN, Role.OWNER]),
+  upload.single('asset'),
+  brandController.addBrandAsset
+);
+
+// Add a brand document (for RAG text content)
+router.post(
+  '/:id/documents',
+  requireRole([Role.MANAGER, Role.ADMIN, Role.OWNER]),
+  brandController.addBrandDocument
+);
+
 export default router;

@@ -46,3 +46,25 @@ export const deleteBrand = asyncErrorHandler(async (req: Request, res: Response)
   await brandService.deleteBrand(req.orgId, brandId);
   sendSuccess(res, null, 'Brand deleted successfully');
 });
+
+export const addBrandAsset = asyncErrorHandler(async (req: Request, res: Response) => {
+  if (!req.orgId) throw new AppError('Organization context missing', 400);
+  if (!req.file) throw new AppError('No file uploaded', 400);
+
+  const brandId = req.params.id as string;
+  const url = req.file.path;
+  const type = req.file.mimetype;
+
+  const asset = await brandService.addBrandAsset(req.orgId, brandId, url, type);
+  sendSuccess(res, asset, 'Brand asset uploaded successfully', 201);
+});
+
+export const addBrandDocument = asyncErrorHandler(async (req: Request, res: Response) => {
+  if (!req.orgId) throw new AppError('Organization context missing', 400);
+
+  const brandId = req.params.id as string;
+  const validatedData = require('../validations/brand.validation').addDocumentSchema.parse(req.body);
+
+  const doc = await brandService.addBrandDocument(req.orgId, brandId, validatedData.content);
+  sendSuccess(res, doc, 'Brand document added successfully', 201);
+});
