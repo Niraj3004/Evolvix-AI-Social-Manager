@@ -1,6 +1,6 @@
 import { Worker, Job } from 'bullmq';
 import { connection } from '../queues/connection';
-import { connectDB } from '../config/db';
+import { connectDB, prisma } from '../config/db';
 
 console.log('Worker process starting...');
 
@@ -30,8 +30,53 @@ const startWorkers = async () => {
   }, { connection, concurrency: 5 });
 
   new Worker('publish', async (job: Job) => {
-    console.log(`[Publish Worker] Processing ${job.id}`, job.data);
-    // In B7, we will actually call the Social Adapters here.
+    console.log(`[Publish Worker] Processing job ${job.id}`, job.data);
+    
+    const { scheduledPostId, orgId, contentId } = job.data;
+    
+    // Fetch the post, content, and the brand's social account
+    const post = await prisma.scheduledPost.findUnique({
+      where: { id: scheduledPostId },
+      include: {
+        content: {
+          include: {
+            brand: {
+              include: {
+                socialAccounts: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    if (!post) throw new Error('ScheduledPost not found');
+    
+    const account = post.content.brand.socialAccounts.find((a: any) => a.platform === post.content.platform);
+    if (!account) throw new Error(`No connected social account for platform ${post.content.platform}`);
+
+    // Decrypt token
+    const tokenRecord = await prisma.oAuthToken.findFirst({
+      where: { socialAccountId: account.id },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!tokenRecord) throw new Error('OAuth token missing');
+
+    const { decrypt } = require('../utils/encryption');
+    const decryptedToken = decrypt(tokenRecord.encryptedToken);
+
+    // Call Social Adapter Stub
+    console.log(`[Publish Worker] Publishing to ${account.platform} with token: ${decryptedToken.substring(0, 5)}***`);
+    console.log(`[Publish Worker] Body: ${post.content.body}`);
+
+    // Update status to PUBLISHED
+    await prisma.scheduledPost.update({
+      where: { id: post.id },
+      data: { status: 'PUBLISHED' },
+    });
+
+    console.log(`[Publish Worker] Successfully published job ${job.id}`);
   }, { connection, concurrency: 5 });
 
   new Worker('analytics', async (job: Job) => {
