@@ -116,7 +116,7 @@ const startWorkers = async () => {
           const { PublishingService } = require('../services/publishing.service');
           const metrics = await PublishingService.fetchMetrics(account.platform, decryptedToken, account.accountId, post.platformPostId);
 
-          await prisma.analytics.upsert({
+          const updatedAnalytics = await prisma.analytics.upsert({
             where: { scheduledPostId: post.id },
             update: metrics,
             create: {
@@ -127,6 +127,19 @@ const startWorkers = async () => {
             }
           });
           console.log(`[Analytics Worker] Updated metrics for post ${post.id}`);
+
+          // Broadcast real-time event to the org
+          try {
+            const { createClient } = require('redis');
+            const redisPub = createClient({ url: process.env.REDIS_URL });
+            await redisPub.connect();
+            // Emit a message that socket.io redis adapter will understand or we can just pub to a channel
+            // The simplest way to trigger socket.io across processes is using the Emitter or pub/sub.
+            await redisPub.publish(`socket.io#/#org_${post.orgId}#`, Buffer.from(JSON.stringify(['analytics_updated', updatedAnalytics])));
+            await redisPub.disconnect();
+          } catch (pubErr) {
+            console.error('Redis pub error', pubErr);
+          }
         } catch (e) {
           console.error(`[Analytics Worker] Failed to fetch metrics for post ${post.id}:`, e);
         }

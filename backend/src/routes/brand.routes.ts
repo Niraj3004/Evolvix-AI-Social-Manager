@@ -4,11 +4,13 @@ import { auth } from '../middlewares/auth.middleware';
 import { tenant } from '../middlewares/tenant.middleware';
 import { requireRole } from '../middlewares/role.middleware';
 import { Role } from '@prisma/client';
+import { upload } from '../middlewares/upload.middleware';
+import { auditMiddleware } from '../middlewares/audit.middleware';
 
 const router = Router();
 
 // All brand routes require authentication and a valid tenant context
-router.use(auth, tenant);
+router.use(auth, tenant, auditMiddleware);
 
 // Only Managers, Admins, and Owners can create brands
 router.post(
@@ -34,8 +36,6 @@ router.delete(
   requireRole([Role.ADMIN, Role.OWNER]),
   brandController.deleteBrand
 );
-
-import { upload } from '../middlewares/upload.middleware';
 
 // Upload a brand asset (logo, etc.)
 router.post(

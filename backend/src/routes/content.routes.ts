@@ -8,19 +8,21 @@ import { Role } from '@prisma/client';
 const router = Router();
 
 // All content routes require auth and tenant context
-router.use(auth, tenant);
+router.use(auth, tenant, auditMiddleware);
+
+const contentAuth = requireRole([Role.MANAGER, Role.ADMIN, Role.OWNER, Role.CREATOR]);
 
 // AI Generation Seam (Placeholder)
 router.post(
   '/generate',
-  requireRole([Role.MANAGER, Role.ADMIN, Role.OWNER, Role.CREATOR]),
+  contentAuth,
   contentController.generateContent
 );
 
 // Content CRUD
 router.post(
   '/',
-  requireRole([Role.MANAGER, Role.ADMIN, Role.OWNER, Role.CREATOR]),
+  contentAuth,
   contentController.createContent
 );
 

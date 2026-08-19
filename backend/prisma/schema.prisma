@@ -49,6 +49,8 @@ model Organization {
   notifications   Notification[]
   auditLogs       AuditLog[]
   analytics       Analytics[]
+  subscription    Subscription?
+  payments        Payment[]
 }
 
 model Membership {
@@ -315,3 +317,33 @@ model AuditLog {
 
   @@index([orgId])
 }
+
+model Subscription {
+  id        String   @id @default(uuid())
+  orgId     String   @unique
+  plan      String   @default("FREE")
+  status    String   @default("ACTIVE")
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  
+  @@index([orgId])
+}
+
+model Payment {
+  id            String   @id @default(uuid())
+  orgId         String
+  amount        Float
+  method        String   // MANUAL, ESEWA, KHALTI
+  screenshotUrl String?
+  status        String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  
+  @@index([orgId])
+}
+
