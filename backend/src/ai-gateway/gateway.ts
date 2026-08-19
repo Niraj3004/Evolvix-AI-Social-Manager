@@ -114,10 +114,10 @@ export class AIGateway {
 
     console.warn(`[AIGateway] All configured image providers failed (likely due to missing API keys/billing). Falling back to FREE public API (Pollinations.ai)...`);
     
-    // 3. FREE FALLBACK (Pollinations.ai)
-    // This requires absolutely no API keys and generates 1080x1080 images for free.
-    // Note: Free models are slightly worse at spelling text than DALL-E 3, but great for visuals.
-    const freeUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1080&height=1080&nologo=true`;
+    // 3. FREE FALLBACK (Pollinations.ai with FLUX)
+    // By explicitly requesting ?model=flux, we get the high-end text-spelling capabilities 
+    // of FLUX completely for free, without needing HuggingFace!
+    const freeUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?model=flux&width=1080&height=1080&nologo=true`;
     
     // Save to cache to prevent spamming the free API
     await redis.set(cacheKey, freeUrl, 'EX', 86400);
