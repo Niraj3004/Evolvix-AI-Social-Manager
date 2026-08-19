@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { asyncErrorHandler } from '../middlewares/asyncErrorHandler';
 import * as usageService from '../services/usage.service';
 import { sendSuccess } from '../utils/response';
+import { AppError } from '../middlewares/errorMiddleware';
 
 export const getUsage = asyncErrorHandler(async (req: Request, res: Response) => {
   // Can get org-specific usage if they pass an orgId query, otherwise all (if super admin)
