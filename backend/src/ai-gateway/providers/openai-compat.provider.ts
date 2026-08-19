@@ -88,4 +88,28 @@ export class OpenAICompatProvider implements LLMProvider {
       model: this.modelName
     };
   }
+
+  async generateImage(prompt: string): Promise<string> {
+    const response = await fetch(`${this.baseUrl}/images/generations`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`
+      },
+      body: JSON.stringify({
+        model: this.modelName,
+        prompt: prompt,
+        n: 1,
+        size: "1024x1024"
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`[${this.id}] Image generation failed: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    return data.data?.[0]?.url || '';
+  }
 }

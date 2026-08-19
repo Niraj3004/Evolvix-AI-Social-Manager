@@ -80,6 +80,39 @@ export class AIGateway {
     throw new Error(`All LLM providers failed for embedding. Last error: ${lastError?.message}`);
   }
 
+  async generateImage(orgId: string, prompt: string): Promise<string> {
+    const cacheKey = `aigateway:image:${this.hashRequest('embed', prompt)}`;
+    
+    // 1. Check cache
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    // 2. Try providers in turn
+    let lastError: Error | null = null;
+    for (const provider of this.providers) {
+      if (!provider.generateImage) continue;
+
+      try {
+        const url = await provider.generateImage(prompt);
+        
+        // Save to cache (TTL 24 hours)
+        await redis.set(cacheKey, url, 'EX', 86400);
+        
+        // 3. Record usage asynchronously (arbitrary 1 unit cost for image)
+        this.recordUsage(orgId, provider.modelName, 0, 0.05).catch(console.error);
+        
+        return url;
+      } catch (error: any) {
+        console.warn(`Provider ${provider.id} failed for image gen: ${error.message}. Failing over...`);
+        lastError = error;
+      }
+    }
+
+    throw new Error(`All LLM providers failed for image gen. Last error: ${lastError?.message}`);
+  }
+
   private async recordUsage(orgId: string, model: string, tokens: number, cost: number) {
     try {
       await prisma.aiUsage.create({

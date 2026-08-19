@@ -5,6 +5,7 @@ import { strategyAgent } from './strategy.agent';
 import { contentAgent } from './content.agent';
 import { designAgent } from './design.agent';
 import { templateService } from '../services/template.service';
+import { gateway } from '../config/ai';
 
 export class Orchestrator {
   private chain: BaseAgent[] = [
@@ -35,24 +36,32 @@ export class Orchestrator {
         if (agent.name === 'ContentAgent') stepOutput = state.contentData;
         
         if (agent.name === 'DesignAgent') {
-          // Check design decision and run Template Engine if required
+          const brandColor = '#6366f1'; 
+          const brandName = 'EvolvixAI';
+          const caption = state.contentData?.caption || 'New Post';
+          const postTopic = state.topic;
+
           if (state.designData?.action === 'USE_TEMPLATE') {
             console.log(`[Orchestrator] DesignAgent selected USE_TEMPLATE. Rendering SVG...`);
-            
-            // In a real app, brandColor and brandName would come from the Brand record
-            // For now, we stub them or pull from research context
-            const brandColor = '#6366f1'; 
-            const brandName = 'EvolvixAI';
-            
-            const caption = state.contentData?.caption || 'New Post';
-            const topic = state.topic;
-
-            const imageUrl = await templateService.renderAndUpload(topic, caption, brandColor, brandName);
-            
-            // Add the generated image URL to the state
+            const imageUrl = await templateService.renderAndUpload(postTopic, caption, brandColor, brandName);
             state.designData.imageUrl = imageUrl;
             console.log(`[Orchestrator] Template rendered and uploaded: ${imageUrl}`);
+          } else if (state.designData?.action === 'GENERATE_VISUAL') {
+            console.log(`[Orchestrator] DesignAgent selected GENERATE_VISUAL. Generating AI image...`);
+            
+            // Build a visual prompt based on the content
+            const imagePrompt = `A high quality, professional social media background image for the topic: ${postTopic}. Style: Modern, clean, no text.`;
+            const baseImageUrl = await gateway.generateImage(orgId, imagePrompt);
+            console.log(`[Orchestrator] AI Image generated successfully.`);
+
+            // Brand the AI image by passing it into the Template Engine
+            console.log(`[Orchestrator] Applying brand overlay to AI image...`);
+            const finalImageUrl = await templateService.renderAndUpload(postTopic, caption, brandColor, brandName, baseImageUrl);
+            
+            state.designData.imageUrl = finalImageUrl;
+            console.log(`[Orchestrator] Branded AI image uploaded: ${finalImageUrl}`);
           }
+          
           stepOutput = state.designData;
         }
 

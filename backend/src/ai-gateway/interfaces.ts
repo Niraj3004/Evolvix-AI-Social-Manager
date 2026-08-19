@@ -33,4 +33,5 @@ export interface LLMProvider {
 
   chat(messages: LLMMessage[], opts?: LLMOptions): Promise<LLMResponse>;
   embed(texts: string[]): Promise<LLMEmbedResponse>;
+  generateImage?(prompt: string): Promise<string>;
 }

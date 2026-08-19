@@ -18,13 +18,18 @@ async function testOrchestrator() {
   const originalRetrieve = ragService.retrieve;
   (ragService.retrieve as any) = async () => [{ content: 'We are a fast-paced AI startup.' }];
 
-  // Mock designAgent to force USE_TEMPLATE branch
+  // Mock designAgent to force GENERATE_VISUAL branch
   const { designAgent } = require('./agents/design.agent');
   const originalDesign = designAgent.execute;
   designAgent.execute = async (state: any) => {
-      state.designData = { action: 'USE_TEMPLATE', reason: 'Test forced template' };
+      state.designData = { action: 'GENERATE_VISUAL', reason: 'Test forced visual' };
       return state;
   };
+
+  // Mock gateway.generateImage
+  const { gateway } = require('./config/ai');
+  const originalGenerateImage = gateway.generateImage;
+  gateway.generateImage = async () => 'https://via.placeholder.com/1080';
 
   // Mock templateService to avoid sharp/cloudinary errors in test
   const { templateService } = require('./services/template.service');
@@ -47,6 +52,7 @@ async function testOrchestrator() {
     prisma.agentRun.create = originalCreate;
     ragService.retrieve = originalRetrieve;
     designAgent.execute = originalDesign;
+    gateway.generateImage = originalGenerateImage;
     templateService.renderAndUpload = originalRender;
     process.exit(0);
   }
