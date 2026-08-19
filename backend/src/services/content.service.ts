@@ -82,11 +82,15 @@ export const updateContent = async (orgId: string, contentId: string, data: any)
   });
 };
 
-// AI Seam implementation stub
-export const generateContentStub = async (orgId: string, brandId: string, prompt: string) => {
-  // TODO: Call AI Gateway later
-  // For now, return placeholder text
+import { contentAgent } from '../agents/content.agent';
+
+export const generateContentFromAgent = async (orgId: string, brandId: string, prompt: string, platform: string) => {
+  const generatedData = await contentAgent.generatePlatformContent(orgId, brandId, prompt, platform);
+  
   return {
-    generatedBody: `[AI GENERATED PLACEHOLDER for prompt: "${prompt}"]`,
+    generatedBody: generatedData.caption,
+    hooks: generatedData.hooks,
+    hashtags: generatedData.hashtags,
+    script: generatedData.script,
   };
 };

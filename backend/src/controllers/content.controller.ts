@@ -45,11 +45,11 @@ export const updateContent = asyncErrorHandler(async (req: Request, res: Respons
 export const generateContent = asyncErrorHandler(async (req: Request, res: Response) => {
   if (!req.orgId) throw new AppError('Organization context missing', 400);
 
-  const { brandId, prompt } = req.body;
-  if (!brandId || !prompt) {
-    throw new AppError('brandId and prompt are required', 400);
+  const { brandId, prompt, platform } = req.body;
+  if (!brandId || !prompt || !platform) {
+    throw new AppError('brandId, platform, and prompt are required', 400);
   }
 
-  const generated = await contentService.generateContentStub(req.orgId, brandId, prompt);
+  const generated = await contentService.generateContentFromAgent(req.orgId, brandId, prompt, platform);
   sendSuccess(res, generated, 'Content generated successfully', 200);
 });
