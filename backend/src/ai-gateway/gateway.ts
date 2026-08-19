@@ -112,17 +112,11 @@ export class AIGateway {
       }
     }
 
-    console.warn(`[AIGateway] All configured image providers failed (likely due to missing API keys/billing). Falling back to FREE public API (Pollinations.ai)...`);
-    
-    // 3. FREE FALLBACK (Pollinations.ai with FLUX)
-    // By explicitly requesting ?model=flux, we get the high-end text-spelling capabilities 
-    // of FLUX completely for free, without needing HuggingFace!
-    const freeUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?model=flux&width=1080&height=1080&nologo=true`;
-    
-    // Save to cache to prevent spamming the free API
-    await redis.set(cacheKey, freeUrl, 'EX', 86400);
-    
-    return freeUrl;
+    const errorMessage = lastError 
+      ? `All image providers failed. Last error: ${lastError.message}` 
+      : `No image providers configured.`;
+    console.error(`[AIGateway] ${errorMessage}`);
+    throw new Error(errorMessage);
   }
 
   private async recordUsage(orgId: string, model: string, tokens: number, cost: number) {
