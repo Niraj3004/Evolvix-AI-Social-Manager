@@ -21,10 +21,15 @@ app.use('/api', routes);
 // Error Middleware (must be last)
 app.use(errorMiddleware);
 
+import { initScheduler } from './scheduler';
+
 // Initialize server
 const startServer = async () => {
   await connectDB();
   
+  // Start the scheduler
+  initScheduler();
+
   app.listen(env.PORT, () => {
     console.log(`Server running on port ${env.PORT}`);
   });

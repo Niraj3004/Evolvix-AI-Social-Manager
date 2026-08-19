@@ -12,6 +12,13 @@ router.get('/health', (req, res) => {
   sendSuccess(res, null, 'Server is healthy');
 });
 
+import { testQueue } from '../queues';
+router.post('/test/queue', async (req, res) => {
+  const { fail } = req.body;
+  const job = await testQueue.add('test-job', { fail: !!fail });
+  sendSuccess(res, { jobId: job.id }, 'Test job enqueued');
+});
+
 router.use('/auth', authRoutes);
 router.use('/orgs', orgRoutes);
 router.use('/brands', brandRoutes);
