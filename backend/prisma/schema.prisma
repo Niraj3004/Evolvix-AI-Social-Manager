@@ -1,0 +1,290 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER
+  OWNER
+  ADMIN
+  MANAGER
+  CREATOR
+  ANALYST
+  CLIENT
+}
+
+model User {
+  id          String       @id @default(uuid())
+  email       String       @unique
+  password    String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  memberships Membership[]
+}
+
+model Organization {
+  id          String       @id @default(uuid())
+  name        String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  memberships Membership[]
+
+  brands          Brand[]
+  brandAssets     BrandAsset[]
+  brandDocuments  BrandDocument[]
+  socialAccounts  SocialAccount[]
+  oauthTokens     OAuthToken[]
+  contents        Content[]
+  contentVersions ContentVersion[]
+  templates       Template[]
+  generatedMedia  GeneratedMedia[]
+  scheduledPosts  ScheduledPost[]
+  publishingJobs  PublishingJob[]
+  agentRuns       AgentRun[]
+  aiUsages        AiUsage[]
+  notifications   Notification[]
+  auditLogs       AuditLog[]
+}
+
+model Membership {
+  id             String   @id @default(uuid())
+  role           Role
+  userId         String
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+}
+
+model Brand {
+  id          String   @id @default(uuid())
+  orgId       String
+  name        String
+  industry    String?
+  description String?
+  audience    String?
+  tone        String?
+  language    String?
+  colors      String?
+  fonts       String?
+  goals       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organization   Organization    @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  brandAssets    BrandAsset[]
+  brandDocuments BrandDocument[]
+  socialAccounts SocialAccount[]
+  contents       Content[]
+
+  @@index([orgId])
+}
+
+model BrandAsset {
+  id        String   @id @default(uuid())
+  brandId   String
+  orgId     String
+  url       String
+  type      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  brand        Brand        @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+}
+
+model BrandDocument {
+  id        String   @id @default(uuid())
+  brandId   String
+  orgId     String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  brand        Brand        @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+}
+
+model SocialAccount {
+  id        String   @id @default(uuid())
+  brandId   String
+  orgId     String
+  platform  String
+  accountId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  brand        Brand        @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  oauthTokens  OAuthToken[]
+
+  @@index([orgId])
+}
+
+model OAuthToken {
+  id              String   @id @default(uuid())
+  socialAccountId String
+  orgId           String
+  encryptedToken  String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  socialAccount SocialAccount @relation(fields: [socialAccountId], references: [id], onDelete: Cascade)
+  organization  Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+}
+
+model Content {
+  id        String   @id @default(uuid())
+  brandId   String
+  orgId     String
+  platform  String
+  body      String
+  status    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  brand           Brand            @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  organization    Organization     @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  contentVersions ContentVersion[]
+  generatedMedia  GeneratedMedia[]
+  scheduledPosts  ScheduledPost[]
+
+  @@index([orgId])
+}
+
+model ContentVersion {
+  id        String   @id @default(uuid())
+  contentId String
+  orgId     String
+  body      String
+  createdAt DateTime @default(now())
+
+  content      Content      @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+}
+
+model Template {
+  id        String   @id @default(uuid())
+  orgId     String
+  name      String
+  type      String
+  data      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+}
+
+model GeneratedMedia {
+  id        String   @id @default(uuid())
+  contentId String
+  orgId     String
+  url       String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  content      Content      @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+}
+
+model ScheduledPost {
+  id           String   @id @default(uuid())
+  contentId    String
+  orgId        String
+  scheduledFor DateTime
+  status       String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  content        Content         @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  organization   Organization    @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  publishingJobs PublishingJob[]
+
+  @@index([orgId])
+}
+
+model PublishingJob {
+  id              String   @id @default(uuid())
+  scheduledPostId String
+  orgId           String
+  status          String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  scheduledPost ScheduledPost @relation(fields: [scheduledPostId], references: [id], onDelete: Cascade)
+  organization  Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+}
+
+model AgentRun {
+  id        String   @id @default(uuid())
+  orgId     String
+  agentType String
+  status    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+}
+
+model AiUsage {
+  id        String   @id @default(uuid())
+  orgId     String
+  model     String
+  tokens    Int
+  cost      Float
+  createdAt DateTime @default(now())
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  orgId     String
+  userId    String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  orgId     String
+  userId    String
+  action    String
+  details   String?
+  createdAt DateTime @default(now())
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+}
