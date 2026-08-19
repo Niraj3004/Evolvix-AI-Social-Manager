@@ -44,4 +44,16 @@ router.patch(
   contentController.updateContent
 );
 
+router.post(
+  '/:id/approve',
+  requireRole([Role.MANAGER, Role.ADMIN, Role.OWNER]), // Creators cannot approve
+  contentController.approveContent
+);
+
+router.post(
+  '/:id/schedule',
+  requireRole([Role.MANAGER, Role.ADMIN, Role.OWNER]),
+  contentController.scheduleContent
+);
+
 export default router;

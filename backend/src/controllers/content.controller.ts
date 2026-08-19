@@ -51,5 +51,27 @@ export const generateContent = asyncErrorHandler(async (req: Request, res: Respo
   }
 
   const generated = await contentService.generateContentFromAgent(req.orgId, brandId, prompt, platform);
-  sendSuccess(res, generated, 'Content generated successfully', 200);
+  sendSuccess(res, generated, 'Content generated and saved as DRAFT', 201);
+});
+
+export const approveContent = asyncErrorHandler(async (req: Request, res: Response) => {
+  if (!req.orgId) throw new AppError('Organization context missing', 400);
+
+  const contentId = req.params.id as string;
+  const content = await contentService.approveContent(req.orgId, contentId);
+  sendSuccess(res, content, 'Content approved successfully');
+});
+
+export const scheduleContent = asyncErrorHandler(async (req: Request, res: Response) => {
+  if (!req.orgId) throw new AppError('Organization context missing', 400);
+
+  const contentId = req.params.id as string;
+  const { scheduledFor } = req.body;
+  
+  if (!scheduledFor) {
+    throw new AppError('scheduledFor is required', 400);
+  }
+
+  const content = await contentService.scheduleContent(req.orgId, contentId, new Date(scheduledFor));
+  sendSuccess(res, content, 'Content scheduled successfully');
 });

@@ -87,10 +87,59 @@ import { contentAgent } from '../agents/content.agent';
 export const generateContentFromAgent = async (orgId: string, brandId: string, prompt: string, platform: string) => {
   const generatedData = await contentAgent.generatePlatformContent(orgId, brandId, prompt, platform);
   
+  const generatedBody = generatedData.caption;
+  
+  // Auto-save as DRAFT
+  const content = await createContent(orgId, {
+    brandId,
+    platform,
+    body: generatedBody,
+    status: 'DRAFT'
+  });
+
   return {
-    generatedBody: generatedData.caption,
+    content,
     hooks: generatedData.hooks,
     hashtags: generatedData.hashtags,
     script: generatedData.script,
   };
+};
+
+export const approveContent = async (orgId: string, contentId: string) => {
+  const existingContent = await getContentById(orgId, contentId);
+  
+  if (existingContent.status !== 'DRAFT') {
+    throw new AppError('Only DRAFT content can be approved', 400);
+  }
+
+  return prisma.content.update({
+    where: { id: contentId },
+    data: { status: 'APPROVED' }
+  });
+};
+
+export const scheduleContent = async (orgId: string, contentId: string, scheduledFor: Date) => {
+  const existingContent = await getContentById(orgId, contentId);
+  
+  if (existingContent.status !== 'APPROVED') {
+    throw new AppError('Only APPROVED content can be scheduled', 400);
+  }
+
+  // Update content status to SCHEDULED and create ScheduledPost
+  return prisma.content.update({
+    where: { id: contentId },
+    data: { 
+      status: 'SCHEDULED',
+      scheduledPosts: {
+        create: {
+          orgId,
+          scheduledFor,
+          status: 'PENDING'
+        }
+      }
+    },
+    include: {
+      scheduledPosts: true
+    }
+  });
 };

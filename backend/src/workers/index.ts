@@ -80,6 +80,12 @@ const startWorkers = async () => {
         platformPostId: platformPostId 
       },
     });
+
+    // Also update the parent Content state
+    await prisma.content.update({
+      where: { id: post.contentId },
+      data: { status: 'PUBLISHED' }
+    });
   }, { connection, concurrency: 5 });
 
   new Worker('analytics', async (job: Job) => {
