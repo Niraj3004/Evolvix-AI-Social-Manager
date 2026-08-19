@@ -3,6 +3,7 @@ import * as contentController from '../controllers/content.controller';
 import { auth } from '../middlewares/auth.middleware';
 import { tenant } from '../middlewares/tenant.middleware';
 import { requireRole } from '../middlewares/role.middleware';
+import { auditMiddleware } from '../middlewares/audit.middleware';
 import { Role } from '@prisma/client';
 
 const router = Router();
