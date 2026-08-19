@@ -8,26 +8,10 @@
   <!-- AI Generated Background Image -->
   <image href="{{BACKGROUND_B64}}" x="0" y="0" width="1080" height="1080" preserveAspectRatio="xMidYMid slice" />
   
-  <!-- Overlay to ensure text readability -->
-  <rect x="0" y="0" width="1080" height="1080" fill="#000000" opacity="0.4" />
-
-  <!-- Glassmorphism Card -->
-  <rect x="80" y="240" width="920" height="600" rx="40" fill="#ffffff" opacity="0.95" filter="url(#drop-shadow)" />
-
-  <!-- Topic/Category Tag -->
-  <rect x="140" y="320" width="220" height="50" rx="25" fill="{{BRAND_COLOR}}" opacity="0.15" />
-  <text x="250" y="352" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="{{BRAND_COLOR}}" text-anchor="middle" letter-spacing="2">{{TOPIC}}</text>
-
-  <!-- Main Caption -->
-  <foreignObject x="140" y="420" width="800" height="300">
-    <div xmlns="http://www.w3.org/1999/xhtml" style="font-family: Arial, sans-serif; font-size: 42px; font-weight: bold; color: #1a1a1a; line-height: 1.4; text-align: left; display: flex; align-items: center; height: 100%;">
-      {{CAPTION}}
-    </div>
-  </foreignObject>
-
-  <!-- Brand Bar -->
-  <rect x="80" y="740" width="920" height="100" rx="0" fill="#f8f9fa" />
-  <path d="M80,800 L1000,800" stroke="#e9ecef" stroke-width="2" />
-  <text x="540" y="800" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#6c757d" text-anchor="middle">@{{BRAND_NAME}}</text>
+  <!-- Minimal Brand Footer Overlay -->
+  <rect x="40" y="960" width="1000" height="80" rx="40" fill="#ffffff" opacity="0.9" />
+  <rect x="50" y="970" width="60" height="60" rx="30" fill="{{BRAND_COLOR}}" />
+  <text x="130" y="1010" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#333333" text-anchor="start">@{{BRAND_NAME}}</text>
+  <text x="980" y="1010" font-family="Arial, sans-serif" font-size="24" font-weight="normal" fill="#666666" text-anchor="end">www.{{BRAND_NAME}}.com</text>
   
 </svg>

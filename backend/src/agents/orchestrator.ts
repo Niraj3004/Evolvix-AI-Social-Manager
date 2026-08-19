@@ -51,8 +51,11 @@ export class Orchestrator {
           } else if (state.designData?.action === 'GENERATE_VISUAL') {
             console.log(`[Orchestrator] DesignAgent selected GENERATE_VISUAL. Generating AI image...`);
             
-            // Build a visual prompt based on the content
-            const imagePrompt = `A high quality, professional social media background image for the topic: ${postTopic}. Style: Modern, clean, no text.`;
+            // Extract the best hook from the content to use as the big poster text
+            const primaryHook = state.contentData?.hooks?.[0] || caption.substring(0, 30);
+
+            // Build a visual prompt tailored for highly stylized digital agency graphics with integrated text
+            const imagePrompt = `A creative, highly engaging digital marketing agency social media poster. Style: Mixed media, vibrant colors, photo-manipulation, modern graphic design, similar to top-tier digital agency ads. Prominently feature this EXACT text in large, bold, integrated typography: "${primaryHook}". Visual concept should match the topic: ${postTopic}. DO NOT add any other text.`;
             const baseImageUrl = await gateway.generateImage(orgId, imagePrompt);
             console.log(`[Orchestrator] AI Image generated successfully.`);
 
