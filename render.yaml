@@ -1,0 +1,59 @@
+services:
+  # Redis for BullMQ
+  - type: redis
+    name: evolvix-redis
+    plan: free # or starter
+    ipAllowList: []
+
+  # PostgreSQL Database (If not using Supabase)
+  # - type: psql
+  #   name: evolvix-db
+  #   plan: free
+
+  # Main API Server
+  - type: web
+    name: evolvix-api
+    env: docker
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    plan: starter
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        sync: false # Set securely in dashboard
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: evolvix-redis
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: TOKEN_ENC_KEY
+        sync: false
+      - key: CLOUDINARY_URL
+        sync: false
+      - key: CLIENT_URL
+        sync: false
+      - key: WEBHOOK_SECRET
+        generateValue: true
+
+  # Background Worker (BullMQ)
+  - type: worker
+    name: evolvix-worker
+    env: docker
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    dockerCommand: "node dist/workers/index.js"
+    plan: starter
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: evolvix-redis
+          property: connectionString
+      - key: TOKEN_ENC_KEY
+        sync: false

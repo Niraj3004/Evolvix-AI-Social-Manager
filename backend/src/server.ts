@@ -12,7 +12,14 @@ const app = express();
 
 // Middlewares
 app.use(helmet());
-app.use(cors({ origin: env.CLIENT_URL }));
+app.use(cors({
+  origin: env.CLIENT_URL,
+  credentials: true,
+}));
+
+// Webhook payload needs raw buffer for signature verification
+app.use('/api/webhooks', express.raw({ type: 'application/json' }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

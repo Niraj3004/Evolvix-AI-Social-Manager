@@ -8,6 +8,7 @@ import contentRoutes from './content.routes';
 import socialRoutes from './social.routes';
 import analyticsRoutes from './analytics.routes';
 import adminRoutes from './admin.routes';
+import webhookRoutes from './webhook.routes';
 
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from '../config/swagger';
@@ -34,5 +35,6 @@ router.use('/content', contentRoutes);
 router.use('/social', socialRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/admin', adminRoutes);
+router.use('/webhooks', webhookRoutes);
 
 export default router;
