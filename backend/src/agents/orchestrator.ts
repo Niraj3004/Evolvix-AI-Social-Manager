@@ -4,6 +4,7 @@ import { researchAgent } from './research.agent';
 import { strategyAgent } from './strategy.agent';
 import { contentAgent } from './content.agent';
 import { designAgent } from './design.agent';
+import { visionAgent } from './vision.agent';
 import { templateService } from '../services/template.service';
 import { gateway } from '../config/ai';
 
@@ -12,7 +13,8 @@ export class Orchestrator {
     researchAgent,
     strategyAgent,
     contentAgent,
-    designAgent
+    designAgent,
+    visionAgent
   ];
 
   async runContentJob(orgId: string, brandId: string, topic: string, platform: string): Promise<AgentState> {
@@ -63,6 +65,11 @@ export class Orchestrator {
           }
           
           stepOutput = state.designData;
+        }
+
+        if (agent.name === 'VisionAgent') {
+          console.log(`[Orchestrator] Vision QA Result: [${state.visionData?.status}] - ${state.visionData?.reason}`);
+          stepOutput = state.visionData;
         }
 
         // Log successful step to AgentRun

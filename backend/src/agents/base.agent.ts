@@ -7,6 +7,10 @@ export interface AgentState {
   strategyData?: any;
   contentData?: any;
   designData?: any;
+  visionData?: {
+    status: 'PASS' | 'FAIL';
+    reason: string;
+  };
   [key: string]: any;
 }
 
