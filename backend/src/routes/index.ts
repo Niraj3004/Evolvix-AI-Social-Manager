@@ -6,6 +6,8 @@ import orgRoutes from './org.routes';
 import brandRoutes from './brand.routes';
 import contentRoutes from './content.routes';
 import socialRoutes from './social.routes';
+import analyticsRoutes from './analytics.routes';
+import adminRoutes from './admin.routes';
 
 const router = Router();
 
@@ -25,5 +27,7 @@ router.use('/orgs', orgRoutes);
 router.use('/brands', brandRoutes);
 router.use('/content', contentRoutes);
 router.use('/social', socialRoutes);
+router.use('/analytics', analyticsRoutes);
+router.use('/admin', adminRoutes);
 
 export default router;

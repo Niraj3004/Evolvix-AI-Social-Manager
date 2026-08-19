@@ -8,8 +8,11 @@ import { AppError } from '../middlewares/errorMiddleware';
 export const connectAccount = asyncErrorHandler(async (req: Request, res: Response) => {
   if (!req.orgId) throw new AppError('Organization context missing', 400);
 
+  const platform = req.params.platform as string;
+  if (!platform) throw new AppError('Platform is required in URL', 400);
+
   const validatedData = connectSocialSchema.parse(req.body);
-  const account = await socialService.connectSocialAccount(req.orgId, validatedData);
+  const account = await socialService.connectSocialAccount(req.orgId, { ...validatedData, platform });
 
   sendSuccess(res, account, 'Social account connected successfully', 201);
 });

@@ -66,21 +66,72 @@ const startWorkers = async () => {
     const { decrypt } = require('../utils/encryption');
     const decryptedToken = decrypt(tokenRecord.encryptedToken);
 
-    // Call Social Adapter Stub
-    console.log(`[Publish Worker] Publishing to ${account.platform} with token: ${decryptedToken.substring(0, 5)}***`);
-    console.log(`[Publish Worker] Body: ${post.content.body}`);
+    // Call Social Adapter via PublishingService
+    const { PublishingService } = require('../services/publishing.service');
+    const platformPostId = await PublishingService.publish(account.platform, decryptedToken, account.accountId, post.content.body);
+    
+    console.log(`[Publish Worker] Successfully published job ${job.id}, platform Post ID: ${platformPostId}`);
 
-    // Update status to PUBLISHED
+    // Update status to PUBLISHED and save platformPostId
     await prisma.scheduledPost.update({
       where: { id: post.id },
-      data: { status: 'PUBLISHED' },
+      data: { 
+        status: 'PUBLISHED',
+        platformPostId: platformPostId 
+      },
     });
-
-    console.log(`[Publish Worker] Successfully published job ${job.id}`);
   }, { connection, concurrency: 5 });
 
   new Worker('analytics', async (job: Job) => {
-    console.log(`[Analytics Worker] Processing ${job.id}`, job.data);
+    console.log(`[Analytics Worker] Processing job ${job.id}`);
+    
+    // In production, this would be a scheduled job that iterates over all published posts
+    // For this implementation, we will process a specific scheduledPostId
+    const { scheduledPostId } = job.data;
+    if (!scheduledPostId) {
+      console.log('[Analytics Worker] Running cron job to fetch metrics for all recent posts...');
+      const recentPosts = await prisma.scheduledPost.findMany({
+        where: { status: 'PUBLISHED', platformPostId: { not: null } },
+        take: 50,
+        include: {
+          content: { include: { brand: { include: { socialAccounts: true } } } }
+        }
+      });
+
+      for (const post of recentPosts) {
+        if (!post.platformPostId) continue;
+        const account = post.content.brand.socialAccounts.find((a: any) => a.platform === post.content.platform);
+        if (!account) continue;
+
+        try {
+          const tokenRecord = await prisma.oAuthToken.findFirst({
+            where: { socialAccountId: account.id },
+            orderBy: { createdAt: 'desc' },
+          });
+          if (!tokenRecord) continue;
+
+          const { decrypt } = require('../utils/encryption');
+          const decryptedToken = decrypt(tokenRecord.encryptedToken);
+
+          const { PublishingService } = require('../services/publishing.service');
+          const metrics = await PublishingService.fetchMetrics(account.platform, decryptedToken, account.accountId, post.platformPostId);
+
+          await prisma.analytics.upsert({
+            where: { scheduledPostId: post.id },
+            update: metrics,
+            create: {
+              ...metrics,
+              scheduledPostId: post.id,
+              orgId: post.orgId,
+              brandId: post.content.brandId
+            }
+          });
+          console.log(`[Analytics Worker] Updated metrics for post ${post.id}`);
+        } catch (e) {
+          console.error(`[Analytics Worker] Failed to fetch metrics for post ${post.id}:`, e);
+        }
+      }
+    }
   }, { connection, concurrency: 2 });
 
   console.log('Workers started successfully, listening for jobs.');

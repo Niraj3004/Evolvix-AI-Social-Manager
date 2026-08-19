@@ -48,6 +48,7 @@ model Organization {
   aiUsages        AiUsage[]
   notifications   Notification[]
   auditLogs       AuditLog[]
+  analytics       Analytics[]
 }
 
 model Membership {
@@ -84,6 +85,7 @@ model Brand {
   brandDocuments BrandDocument[]
   socialAccounts SocialAccount[]
   contents       Content[]
+  analytics      Analytics[]
 
   @@index([orgId])
 }
@@ -208,17 +210,19 @@ model GeneratedMedia {
 }
 
 model ScheduledPost {
-  id           String   @id @default(uuid())
-  contentId    String
-  orgId        String
-  scheduledFor DateTime
-  status       String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id             String   @id @default(uuid())
+  contentId      String
+  orgId          String
+  scheduledFor   DateTime
+  status         String
+  platformPostId String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   content        Content         @relation(fields: [contentId], references: [id], onDelete: Cascade)
   organization   Organization    @relation(fields: [orgId], references: [id], onDelete: Cascade)
   publishingJobs PublishingJob[]
+  analytics      Analytics?
 
   @@index([orgId])
 }
@@ -274,6 +278,29 @@ model Notification {
   organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
   @@index([orgId])
+}
+
+model Analytics {
+  id              String   @id @default(uuid())
+  scheduledPostId String   @unique
+  orgId           String
+  brandId         String
+  reach           Int      @default(0)
+  impressions     Int      @default(0)
+  likes           Int      @default(0)
+  comments        Int      @default(0)
+  shares          Int      @default(0)
+  saves           Int      @default(0)
+  clicks          Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  scheduledPost ScheduledPost @relation(fields: [scheduledPostId], references: [id], onDelete: Cascade)
+  organization  Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  brand         Brand         @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+  @@index([brandId])
 }
 
 model AuditLog {

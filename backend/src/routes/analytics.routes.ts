@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import * as socialController from '../controllers/social.controller';
+import * as analyticsController from '../controllers/analytics.controller';
 import { auth } from '../middlewares/auth.middleware';
 import { tenant } from '../middlewares/tenant.middleware';
 import { requireRole } from '../middlewares/role.middleware';
@@ -9,17 +9,11 @@ const router = Router();
 
 router.use(auth, tenant);
 
-// Connect a new social account
-router.post(
-  '/:platform/connect',
-  requireRole([Role.MANAGER, Role.ADMIN, Role.OWNER]),
-  socialController.connectAccount
-);
-
-// List social accounts for a brand
+// Get analytics for a brand
 router.get(
   '/:brandId',
-  socialController.getAccounts
+  requireRole([Role.MANAGER, Role.ADMIN, Role.OWNER, Role.ANALYST]),
+  analyticsController.getAnalytics
 );
 
 export default router;
