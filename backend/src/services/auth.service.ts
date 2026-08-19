@@ -71,3 +71,74 @@ export const refresh = async (userId: string) => {
   const accessToken = generateAccessToken(payload);
   return { accessToken };
 };
+export const forgotPassword = async (email: string) => {
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) {
+    // Return success to prevent email enumeration attacks
+    return { message: 'If that email exists, an OTP has been sent.' };
+  }
+
+  // Generate a 6-digit OTP
+  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+  const otpExpiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes from now
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { otpCode, otpExpiresAt },
+  });
+
+  // Send the email async
+  import('../services/email.service').then(({ emailService }) => {
+    emailService.sendOtpEmail(user.email, otpCode);
+  }).catch(console.error);
+
+  return { message: 'If that email exists, an OTP has been sent.' };
+};
+
+export const verifyOtp = async (email: string, otpCode: string) => {
+  const user = await prisma.user.findUnique({ where: { email } });
+  
+  if (!user || !user.otpCode || !user.otpExpiresAt) {
+    throw new Error('Invalid or expired OTP');
+  }
+
+  if (user.otpCode !== otpCode) {
+    throw new Error('Invalid OTP code');
+  }
+
+  if (new Date() > user.otpExpiresAt) {
+    throw new Error('OTP code has expired');
+  }
+
+  // OTP is valid! Generate a short-lived temporary token for password reset
+  const resetToken = generateAccessToken({ userId: user.id, purpose: 'reset-password' });
+  
+  return { resetToken };
+};
+
+export const resetPassword = async (resetToken: string, newPasswordRaw: string) => {
+  const { verifyAccessToken } = require('../utils/jwt');
+  let decoded: any;
+  try {
+    decoded = verifyAccessToken(resetToken);
+  } catch (err) {
+    throw new Error('Invalid or expired reset token');
+  }
+
+  if (decoded.purpose !== 'reset-password') {
+    throw new Error('Invalid token type');
+  }
+
+  const hashedPassword = await bcrypt.hash(newPasswordRaw, 10);
+
+  await prisma.user.update({
+    where: { id: decoded.userId },
+    data: {
+      password: hashedPassword,
+      otpCode: null,
+      otpExpiresAt: null,
+    }
+  });
+
+  return { message: 'Password has been successfully reset.' };
+};

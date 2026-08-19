@@ -16,10 +16,10 @@ export const generateRefreshToken = (payload: { userId: string }): string => {
   return jwt.sign(payload, env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
 };
 
-export const verifyAccessToken = (token: string): TokenPayload => {
-  return jwt.verify(token, env.JWT_SECRET) as TokenPayload;
+export const verifyAccessToken = (token: string): any => {
+  return jwt.verify(token, env.JWT_SECRET);
 };
 
-export const verifyRefreshToken = (token: string): { userId: string } => {
-  return jwt.verify(token, env.JWT_REFRESH_SECRET) as { userId: string };
+export const verifyRefreshToken = (token: string): any => {
+  return jwt.verify(token, env.JWT_REFRESH_SECRET);
 };

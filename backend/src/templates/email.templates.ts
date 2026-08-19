@@ -144,3 +144,38 @@ export const getPostPublishedTemplate = (platform: string, postUrl?: string) => 
 </body>
 </html>
 `;
+
+export const getOtpEmailTemplate = (otpCode: string) => `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #0d0d12; color: #ffffff; padding: 40px; margin: 0; }
+    .container { max-width: 600px; margin: 0 auto; background: linear-gradient(145deg, #16161e, #1a1a24); border-radius: 12px; padding: 40px; border: 1px solid #2d2d3a; }
+    .header { text-align: center; margin-bottom: 30px; }
+    .header h1 { color: #8b5cf6; font-size: 28px; margin: 0; font-weight: 700; }
+    .content { font-size: 16px; line-height: 1.6; color: #cbd5e1; text-align: center; }
+    .otp-box { background-color: #0d0d12; border: 1px dashed #8b5cf6; border-radius: 8px; padding: 20px; font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #ffffff; margin: 30px auto; width: fit-content; }
+    .footer { text-align: center; font-size: 13px; color: #64748b; margin-top: 40px; padding-top: 20px; border-top: 1px solid #2d2d3a; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Password Reset</h1>
+    </div>
+    <div class="content">
+      <p>We received a request to reset your password. Use the code below to verify your identity:</p>
+      
+      <div class="otp-box">${otpCode}</div>
+      
+      <p>This code will expire in <strong>15 minutes</strong>.</p>
+      <p style="font-size: 12px; color: #64748b;">If you did not request a password reset, please ignore this email.</p>
+    </div>
+    <div class="footer">
+      <p>&copy; ${new Date().getFullYear()} Evolvix AI. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>
+`;

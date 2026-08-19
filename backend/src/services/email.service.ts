@@ -4,7 +4,8 @@ import {
   getWelcomeEmailTemplate,
   getPaymentPendingTemplate,
   getPaymentApprovedTemplate,
-  getPostPublishedTemplate
+  getPostPublishedTemplate,
+  getOtpEmailTemplate
 } from '../templates/email.templates';
 
 class EmailService {
@@ -61,6 +62,11 @@ class EmailService {
   public async sendPostPublishedEmail(to: string, platform: string, postUrl?: string) {
     const html = getPostPublishedTemplate(platform, postUrl);
     await this.sendHtmlEmail(to, `Your post is live on ${platform}!`, html);
+  }
+
+  public async sendOtpEmail(to: string, otpCode: string) {
+    const html = getOtpEmailTemplate(otpCode);
+    await this.sendHtmlEmail(to, 'Password Reset Code', html);
   }
 }
 
