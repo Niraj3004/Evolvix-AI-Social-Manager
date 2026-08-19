@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import { env } from './config/env.config';
 import { connectDB } from './config/db';
 import './config/redis'; // Initialize redis
+import { globalLimiter } from './middlewares/rateLimit.middleware';
 import routes from './routes';
 import { errorMiddleware } from './middlewares/errorMiddleware';
 
@@ -16,6 +17,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
+app.use('/api', globalLimiter);
 app.use('/api', routes);
 
 // Error Middleware (must be last)

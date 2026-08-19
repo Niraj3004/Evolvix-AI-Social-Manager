@@ -9,7 +9,12 @@ import socialRoutes from './social.routes';
 import analyticsRoutes from './analytics.routes';
 import adminRoutes from './admin.routes';
 
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from '../config/swagger';
+
 const router = Router();
+
+router.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 router.get('/health', (req, res) => {
   sendSuccess(res, null, 'Server is healthy');
