@@ -18,6 +18,19 @@ async function testOrchestrator() {
   const originalRetrieve = ragService.retrieve;
   (ragService.retrieve as any) = async () => [{ content: 'We are a fast-paced AI startup.' }];
 
+  // Mock designAgent to force USE_TEMPLATE branch
+  const { designAgent } = require('./agents/design.agent');
+  const originalDesign = designAgent.execute;
+  designAgent.execute = async (state: any) => {
+      state.designData = { action: 'USE_TEMPLATE', reason: 'Test forced template' };
+      return state;
+  };
+
+  // Mock templateService to avoid sharp/cloudinary errors in test
+  const { templateService } = require('./services/template.service');
+  const originalRender = templateService.renderAndUpload;
+  templateService.renderAndUpload = async () => 'https://res.cloudinary.com/demo/image/upload/sample.jpg';
+
   try {
     const finalState = await orchestrator.runContentJob(orgId, brandId, topic, platform);
     
@@ -33,6 +46,8 @@ async function testOrchestrator() {
   } finally {
     prisma.agentRun.create = originalCreate;
     ragService.retrieve = originalRetrieve;
+    designAgent.execute = originalDesign;
+    templateService.renderAndUpload = originalRender;
     process.exit(0);
   }
 }

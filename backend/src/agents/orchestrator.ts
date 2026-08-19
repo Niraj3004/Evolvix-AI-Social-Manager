@@ -4,6 +4,7 @@ import { researchAgent } from './research.agent';
 import { strategyAgent } from './strategy.agent';
 import { contentAgent } from './content.agent';
 import { designAgent } from './design.agent';
+import { templateService } from '../services/template.service';
 
 export class Orchestrator {
   private chain: BaseAgent[] = [
@@ -32,7 +33,28 @@ export class Orchestrator {
         if (agent.name === 'ResearchAgent') stepOutput = state.researchData;
         if (agent.name === 'StrategyAgent') stepOutput = state.strategyData;
         if (agent.name === 'ContentAgent') stepOutput = state.contentData;
-        if (agent.name === 'DesignAgent') stepOutput = state.designData;
+        
+        if (agent.name === 'DesignAgent') {
+          // Check design decision and run Template Engine if required
+          if (state.designData?.action === 'USE_TEMPLATE') {
+            console.log(`[Orchestrator] DesignAgent selected USE_TEMPLATE. Rendering SVG...`);
+            
+            // In a real app, brandColor and brandName would come from the Brand record
+            // For now, we stub them or pull from research context
+            const brandColor = '#6366f1'; 
+            const brandName = 'EvolvixAI';
+            
+            const caption = state.contentData?.caption || 'New Post';
+            const topic = state.topic;
+
+            const imageUrl = await templateService.renderAndUpload(topic, caption, brandColor, brandName);
+            
+            // Add the generated image URL to the state
+            state.designData.imageUrl = imageUrl;
+            console.log(`[Orchestrator] Template rendered and uploaded: ${imageUrl}`);
+          }
+          stepOutput = state.designData;
+        }
 
         // Log successful step to AgentRun
         await prisma.agentRun.create({
