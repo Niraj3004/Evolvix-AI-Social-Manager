@@ -49,6 +49,19 @@ export default function ContentEditorPage() {
     onError: (err: ApiError) => toast.error(err.message),
   });
 
+  const approveMutation = useMutation({
+    mutationFn: () => 
+      apiFetch(`/content/${contentId}/approve`, {
+        method: "POST",
+      }),
+    onSuccess: () => {
+      toast.success("Content approved successfully!");
+      queryClient.invalidateQueries({ queryKey: ["content", contentId] });
+      queryClient.invalidateQueries({ queryKey: ["contents"] });
+    },
+    onError: (err: ApiError) => toast.error(err.message),
+  });
+
   if (isLoading) return <div className="flex justify-center p-12"><Spinner /></div>;
   if (!content) return <div>Content not found</div>;
 
@@ -73,6 +86,17 @@ export default function ContentEditorPage() {
         </div>
         
         <div className="ml-auto flex gap-2">
+          {isDraft && (
+            <Button 
+              variant="outline" 
+              onClick={() => approveMutation.mutate()}
+              disabled={approveMutation.isPending || hasChanges} // Must save before approving
+              className="text-green-600 border-green-600 hover:bg-green-50"
+            >
+              {approveMutation.isPending ? <Spinner size={16} className="mr-2" /> : null}
+              Approve
+            </Button>
+          )}
           <Button 
             variant="secondary" 
             onClick={() => setBody(content.body)}
@@ -82,7 +106,7 @@ export default function ContentEditorPage() {
           </Button>
           <Button 
             onClick={() => updateMutation.mutate(body)}
-            disabled={!hasChanges || updateMutation.isPending}
+            disabled={!hasChanges || updateMutation.isPending || !isDraft}
           >
             {updateMutation.isPending ? <Spinner size={16} className="mr-2" /> : null}
             Save Changes
