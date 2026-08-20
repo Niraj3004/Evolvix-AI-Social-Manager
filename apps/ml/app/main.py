@@ -61,3 +61,64 @@ def predict_engagement(post: PlannedPost):
         "is_prediction": True,
         "predicted_engagement_rate": round(float(prediction), 2)
     }
+
+class RecommendationRequest(BaseModel):
+    body: str
+    platform: str
+    content_type: Optional[str] = "post"
+
+@app.post("/predict/recommendations")
+def get_recommendations(req: RecommendationRequest):
+    if not model_bundle:
+        raise HTTPException(status_code=503, detail="No trained model available.")
+        
+    from datetime import datetime, timedelta
+    
+    # Generate candidate posting times for the next 24 hours
+    base_time = datetime.now()
+    candidates = []
+    
+    for hour_offset in range(24):
+        candidate_time = base_time + timedelta(hours=hour_offset)
+        candidates.append({
+            "scheduledFor": candidate_time,
+            "body": req.body,
+            "platform": req.platform,
+            "content_type": req.content_type
+        })
+        
+    df_candidates = pd.DataFrame(candidates)
+    X_candidates = build_features(df_candidates)
+    
+    model_columns = model_bundle['columns']
+    X_candidates = X_candidates.reindex(columns=model_columns, fill_value=0)
+    
+    model = model_bundle['model']
+    predictions = model.predict(X_candidates)
+    
+    results = []
+    for i, pred in enumerate(predictions):
+        results.append({
+            "scheduledFor": candidates[i]["scheduledFor"].isoformat(),
+            "predicted_engagement_rate": round(float(pred), 2)
+        })
+        
+    # Rank candidates by predicted engagement descending
+    results.sort(key=lambda x: x["predicted_engagement_rate"], reverse=True)
+    
+    return {
+        "top_recommendation": results[0],
+        "all_ranked_candidates": results[:5] # Return top 5
+    }
+
+from fastapi import BackgroundTasks
+from training.train import train_model
+
+@app.post("/train")
+def trigger_retraining(background_tasks: BackgroundTasks):
+    """
+    Continuous-learning loop trigger.
+    Periodically re-pulls data, retrains, evaluates, and deploys ONLY if it passes the gate.
+    """
+    background_tasks.add_task(train_model)
+    return {"status": "Retraining job started in the background. Model will only be updated if it passes quality gates."}
