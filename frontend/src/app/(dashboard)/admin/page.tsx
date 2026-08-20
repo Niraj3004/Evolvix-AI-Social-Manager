@@ -13,7 +13,7 @@ import { ShieldCheck, Users, CreditCard, Activity } from "lucide-react";
 
 export default function AdminDashboardPage() {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = React.useState<"users" | "payments">("payments");
+  const [activeTab, setActiveTab] = React.useState<"users" | "payments" | "audit">("users");
 
   // Fetch Users
   const { data: users, isLoading: isLoadingUsers, error: usersError } = useQuery({

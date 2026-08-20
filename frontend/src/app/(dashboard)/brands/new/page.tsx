@@ -22,7 +22,7 @@ const brandSchema = z.object({
   description: z.string().optional(),
   audience: z.string().optional(),
   tone: z.string().optional(),
-  language: z.string().default("en"),
+  language: z.string(),
   goals: z.string().optional(), // We'll convert this to an array on submit
 });
 

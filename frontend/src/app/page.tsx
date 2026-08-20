@@ -2,6 +2,7 @@ import * as React from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Play, CheckCircle2, Search, Calendar, Sparkles, BarChart3, MessageSquare, Briefcase, Zap, ShieldCheck } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function LandingPage() {
   return (
@@ -337,8 +338,8 @@ export default function LandingPage() {
               </div>
               <p className="max-w-xs">The AI-powered omnichannel social platform. One Inbox. Every channel. AI that handles the work.</p>
               <div className="flex gap-4 pt-2">
-                <div className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center hover:bg-purple-600 hover:text-white transition-colors cursor-pointer"><Twitter size={14}/></div>
-                <div className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center hover:bg-purple-600 hover:text-white transition-colors cursor-pointer"><Linkedin size={14}/></div>
+                <div className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center hover:bg-purple-600 hover:text-white transition-colors cursor-pointer text-xs font-bold">𝕏</div>
+                <div className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center hover:bg-purple-600 hover:text-white transition-colors cursor-pointer text-xs font-bold">in</div>
               </div>
             </div>
             

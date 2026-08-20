@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Spinner } from "@/components/ui/spinner";
-import { Share2, Trash2, Edit3, Link as LinkIcon, Facebook, Twitter, Linkedin, Instagram } from "lucide-react";
+import { Share2, Trash2, Edit3, Link as LinkIcon } from "lucide-react";
 
 const brandSchema = z.object({
   name: z.string().min(2, "Brand name must be at least 2 characters"),
@@ -95,7 +95,7 @@ export default function BrandDetailPage() {
         method: "POST",
         body: JSON.stringify({ brandId, authCode: "dummy_code_from_oauth" })
       }),
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast.success(`${data.message}`);
       queryClient.invalidateQueries({ queryKey: ["social", brandId] });
     },
@@ -117,7 +117,7 @@ export default function BrandDetailPage() {
             <Edit3 size={16} className="mr-2" />
             {isEditing ? "Cancel Edit" : "Edit Profile"}
           </Button>
-          <Button variant="destructive" onClick={() => {
+          <Button className="bg-red-600 text-white hover:bg-red-700 shadow-sm" onClick={() => {
             if (confirm("Are you sure you want to delete this brand? All content will be lost.")) {
               deleteMutation.mutate();
             }
@@ -209,10 +209,10 @@ export default function BrandDetailPage() {
                   {socialAccounts?.map(acc => (
                     <li key={acc.id} className="flex justify-between items-center text-sm border-b pb-2">
                       <div className="flex items-center gap-2 font-medium capitalize">
-                        {acc.platform === 'linkedin' && <Linkedin size={16} className="text-blue-600"/>}
-                        {acc.platform === 'twitter' && <Twitter size={16} className="text-sky-500"/>}
-                        {acc.platform === 'instagram' && <Instagram size={16} className="text-pink-600"/>}
-                        {acc.platform === 'facebook' && <Facebook size={16} className="text-blue-700"/>}
+                        {acc.platform === 'linkedin' && <span className="text-blue-600 font-bold">in</span>}
+                        {acc.platform === 'twitter' && <span className="text-sky-500 font-bold">𝕏</span>}
+                        {acc.platform === 'instagram' && <span className="text-pink-600 font-bold">ig</span>}
+                        {acc.platform === 'facebook' && <span className="text-blue-700 font-bold">f</span>}
                         {acc.platform}
                       </div>
                       <span className="text-zinc-500 text-xs bg-zinc-100 px-2 py-0.5 rounded">Connected</span>
@@ -225,16 +225,16 @@ export default function BrandDetailPage() {
                 <p className="text-xs font-semibold text-zinc-500 uppercase">Simulate OAuth Connection</p>
                 <div className="grid grid-cols-2 gap-2">
                   <Button variant="outline" size="sm" onClick={() => connectSocialMutation.mutate("linkedin")} disabled={connectSocialMutation.isPending}>
-                    <Linkedin size={14} className="mr-2 text-blue-600" /> LinkedIn
+                    <span className="mr-2 text-blue-600 font-bold">in</span> LinkedIn
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => connectSocialMutation.mutate("twitter")} disabled={connectSocialMutation.isPending}>
-                    <Twitter size={14} className="mr-2 text-sky-500" /> Twitter
+                    <span className="mr-2 text-sky-500 font-bold">𝕏</span> Twitter
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => connectSocialMutation.mutate("instagram")} disabled={connectSocialMutation.isPending}>
-                    <Instagram size={14} className="mr-2 text-pink-600" /> Instagram
+                    <span className="mr-2 text-pink-600 font-bold">ig</span> Instagram
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => connectSocialMutation.mutate("facebook")} disabled={connectSocialMutation.isPending}>
-                    <Facebook size={14} className="mr-2 text-blue-700" /> Facebook
+                    <span className="mr-2 text-blue-700 font-bold">f</span> Facebook
                   </Button>
                 </div>
               </div>
