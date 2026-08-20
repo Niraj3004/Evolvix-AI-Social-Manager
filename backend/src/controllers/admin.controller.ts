@@ -86,3 +86,23 @@ export const approvePayment = asyncErrorHandler(async (req: Request, res: Respon
 
   sendSuccess(res, { payment: updatedPayment, subscription }, 'Payment approved and subscription activated');
 });
+
+export const getUsers = asyncErrorHandler(async (req: Request, res: Response) => {
+  const { prisma } = require('../config/db');
+  
+  const users = await prisma.user.findMany({
+    select: {
+      id: true,
+      email: true,
+      createdAt: true,
+      memberships: {
+        include: {
+          organization: true
+        }
+      }
+    },
+    orderBy: { createdAt: 'desc' }
+  });
+  
+  sendSuccess(res, users, 'Users fetched');
+});

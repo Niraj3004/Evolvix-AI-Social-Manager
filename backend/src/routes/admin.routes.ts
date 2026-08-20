@@ -34,4 +34,10 @@ router.post(
   adminController.approvePayment
 );
 
+router.get(
+  '/users',
+  requireRole([Role.SUPER]),
+  adminController.getUsers
+);
+
 export default router;
