@@ -1,0 +1,5 @@
+# Ignore all markdown files to avoid pushing AI prompts/memory
+*.md
+
+# Except README.md
+!README.md
