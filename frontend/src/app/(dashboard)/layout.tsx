@@ -15,10 +15,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   React.useEffect(() => {
     setIsMounted(true);
-    if (!useAuthStore.getState().accessToken) {
+    const authState = useAuthStore.getState();
+    if (!authState.accessToken) {
       router.push("/login");
+    } else if (authState.user && !authState.user.orgId && pathname !== "/onboarding") {
+      router.push("/onboarding");
     }
-  }, [router]);
+  }, [router, pathname]);
 
   if (!isMounted || !user) {
     return null; // or a loading spinner

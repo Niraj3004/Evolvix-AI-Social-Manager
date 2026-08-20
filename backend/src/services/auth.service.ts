@@ -67,7 +67,18 @@ export const login = async (email: string, passwordRaw: string, orgId?: string) 
 
 export const refresh = async (userId: string) => {
   // Normally you would validate the refresh token against the DB or cache here
-  const payload = { userId };
+  
+  // Look up user's default/first organization to restore context
+  const membership = await prisma.membership.findFirst({
+    where: { userId },
+  });
+
+  const payload = { 
+    userId,
+    orgId: membership?.organizationId || null,
+    role: membership?.role || null
+  };
+  
   const accessToken = generateAccessToken(payload);
   return { accessToken };
 };
