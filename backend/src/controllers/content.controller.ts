@@ -75,3 +75,36 @@ export const scheduleContent = asyncErrorHandler(async (req: Request, res: Respo
   const content = await contentService.scheduleContent(req.orgId, contentId, new Date(scheduledFor));
   sendSuccess(res, content, 'Content scheduled successfully');
 });
+
+export const predictEngagement = asyncErrorHandler(async (req: Request, res: Response) => {
+  if (!req.orgId) throw new AppError('Organization context missing', 400);
+
+  const { scheduledFor, body, platform, content_type } = req.body;
+  
+  if (!scheduledFor || !body || !platform) {
+    throw new AppError('scheduledFor, body, and platform are required for prediction', 400);
+  }
+
+  try {
+    const { env } = require('../config/env.config');
+    const mlResponse = await fetch(`${env.ML_URL}/predict/engagement`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        scheduledFor,
+        body,
+        platform,
+        content_type: content_type || 'post'
+      })
+    });
+
+    if (!mlResponse.ok) {
+      throw new Error(`ML Service Error: ${mlResponse.status}`);
+    }
+
+    const predictionData = await mlResponse.json();
+    sendSuccess(res, predictionData, 'Engagement prediction generated successfully');
+  } catch (error: any) {
+    throw new AppError(`Failed to get prediction: ${error.message}`, 502);
+  }
+});

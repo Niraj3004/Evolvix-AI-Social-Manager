@@ -25,6 +25,7 @@ const envSchema = z.object({
   OPENROUTER_API_KEY: z.string().optional(),
   OPENAI_API_KEY: z.string().optional(),
   HUGGINGFACE_API_KEY: z.string().optional(),
+  ML_URL: z.string().url().default('http://localhost:8000'),
   AI_COMPUTE_MODE: z.enum(['CPU', 'GPU']).default('CPU'),
 });
 

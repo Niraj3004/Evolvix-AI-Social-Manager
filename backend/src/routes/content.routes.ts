@@ -20,6 +20,13 @@ router.post(
   contentController.generateContent
 );
 
+// ML Prediction for Engagement
+router.post(
+  '/predict-engagement',
+  contentAuth,
+  contentController.predictEngagement
+);
+
 // Content CRUD
 router.post(
   '/',
