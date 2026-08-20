@@ -4,7 +4,7 @@ import * as React from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useAuthStore } from "@/store/auth.store";
-import { LogOut, Home, Briefcase, Calendar, LayoutDashboard, Settings } from "lucide-react";
+import { LogOut, Home, Briefcase, Calendar, LayoutDashboard, Settings, Activity, Webhook, FlaskConical, ShieldCheck, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -37,6 +37,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { label: "Brands", icon: Briefcase, href: "/brands" },
     { label: "Content", icon: LayoutDashboard, href: "/content" },
     { label: "Calendar", icon: Calendar, href: "/calendar" },
+    { label: "Analytics", icon: Activity, href: "/analytics" },
+    { label: "Webhooks", icon: Webhook, href: "/webhooks" },
+    { label: "ML Sandbox", icon: FlaskConical, href: "/ml-test" },
+    { label: "Admin", icon: ShieldCheck, href: "/admin" },
+    { label: "Upgrade", icon: CreditCard, href: "/upgrade" },
     { label: "Settings", icon: Settings, href: "/settings" },
   ];
 
