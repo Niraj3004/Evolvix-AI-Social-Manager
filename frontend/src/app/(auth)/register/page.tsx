@@ -18,10 +18,10 @@ import Link from "next/link";
 
 const registerSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
-  password: z.string().min(8, { message: "Password must be at least 8 characters" }),
-  confirmPassword: z.string()
+  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+  confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
+  message: "Passwords do not match",
   path: ["confirmPassword"],
 });
 
@@ -29,7 +29,6 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { login } = useAuthStore();
   const [isLoading, setIsLoading] = React.useState(false);
 
   const form = useForm<RegisterFormValues>({
@@ -44,19 +43,18 @@ export default function RegisterPage() {
   async function onSubmit(data: RegisterFormValues) {
     setIsLoading(true);
     try {
-      const response = await apiFetch<{ user: User; accessToken: string; refreshToken: string }>("/auth/register", {
+      await apiFetch("/auth/register", {
         method: "POST",
         body: JSON.stringify({ email: data.email, password: data.password }),
       });
 
-      login(response.user, response.accessToken, response.refreshToken);
-      toast.success("Account created successfully!");
-      router.push("/");
+      toast.success("Registration successful! Please login.");
+      router.push("/login");
     } catch (error) {
       if (error instanceof ApiError) {
         toast.error(error.message);
       } else {
-        toast.error("Failed to register account");
+        toast.error("Failed to register");
       }
     } finally {
       setIsLoading(false);
@@ -66,12 +64,12 @@ export default function RegisterPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-xl">Create an account</CardTitle>
+        <CardTitle className="text-xl">Create your account</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+            <label className="text-sm font-medium leading-none">
               Email
             </label>
             <Input type="email" placeholder="name@example.com" {...form.register("email")} />
@@ -80,7 +78,7 @@ export default function RegisterPage() {
             )}
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+            <label className="text-sm font-medium leading-none">
               Password
             </label>
             <Input type="password" {...form.register("password")} />
@@ -89,7 +87,7 @@ export default function RegisterPage() {
             )}
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+            <label className="text-sm font-medium leading-none">
               Confirm Password
             </label>
             <Input type="password" {...form.register("confirmPassword")} />

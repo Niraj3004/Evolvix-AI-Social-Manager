@@ -1,128 +1,91 @@
 "use client";
 
 import * as React from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import toast from "react-hot-toast";
+import Link from "next/link";
+import { ArrowLeft, Edit, Trash2, Twitter, FileText } from "lucide-react";
 
-import { apiFetch, ApiError } from "@/lib/api";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
-import { Share2, Trash2, Edit3, Link as LinkIcon } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
-const brandSchema = z.object({
-  name: z.string().min(2, "Brand name must be at least 2 characters"),
-  industry: z.string().optional(),
-  description: z.string().optional(),
-  audience: z.string().optional(),
-  tone: z.string().optional(),
-  language: z.string(),
-  goals: z.string().optional(),
-});
-
-type BrandFormValues = z.infer<typeof brandSchema>;
-
-export default function BrandDetailPage() {
+export default function BrandDetailsPage() {
   const params = useParams();
   const router = useRouter();
-  const queryClient = useQueryClient();
   const brandId = params.id as string;
 
-  const [isEditing, setIsEditing] = React.useState(false);
+  const [isConnecting, setIsConnecting] = React.useState(false);
+  const [isConnected, setIsConnected] = React.useState(false);
+  const [isUploading, setIsUploading] = React.useState(false);
+  const [isUploaded, setIsUploaded] = React.useState(false);
 
-  // Fetch Brand
-  const { data: brand, isLoading: isLoadingBrand } = useQuery({
+  const handleConnect = () => {
+    setIsConnecting(true);
+    setTimeout(() => {
+      setIsConnecting(false);
+      setIsConnected(true);
+    }, 1500);
+  };
+
+  const handleUpload = () => {
+    setIsUploading(true);
+    setTimeout(() => {
+      setIsUploading(false);
+      setIsUploaded(true);
+    }, 1500);
+  };
+
+  const { data: brand, isLoading, error } = useQuery({
     queryKey: ["brand", brandId],
     queryFn: () => apiFetch<any>(`/brands/${brandId}`),
   });
 
-  // Fetch Social Accounts
-  const { data: socialAccounts, isLoading: isLoadingSocial } = useQuery({
-    queryKey: ["social", brandId],
-    queryFn: () => apiFetch<any[]>(`/social/${brandId}`),
-  });
+  if (isLoading) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <Spinner size={32} />
+      </div>
+    );
+  }
 
-  const form = useForm<BrandFormValues>({
-    resolver: zodResolver(brandSchema),
-    values: brand ? {
-      name: brand.name,
-      industry: brand.industry || "",
-      description: brand.description || "",
-      audience: brand.audience || "",
-      tone: brand.tone || "",
-      language: brand.language || "en",
-      goals: brand.goals ? brand.goals.join(", ") : "",
-    } : undefined,
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: (data: BrandFormValues) => 
-      apiFetch(`/brands/${brandId}`, {
-        method: "PATCH",
-        body: JSON.stringify({
-          ...data,
-          goals: data.goals ? data.goals.split(",").map(g => g.trim()) : []
-        })
-      }),
-    onSuccess: () => {
-      toast.success("Brand updated!");
-      setIsEditing(false);
-      queryClient.invalidateQueries({ queryKey: ["brand", brandId] });
-      queryClient.invalidateQueries({ queryKey: ["brands"] });
-    },
-    onError: (err: ApiError) => toast.error(err.message),
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: () => apiFetch(`/brands/${brandId}`, { method: "DELETE" }),
-    onSuccess: () => {
-      toast.success("Brand deleted");
-      queryClient.invalidateQueries({ queryKey: ["brands"] });
-      router.push("/brands");
-    },
-    onError: (err: ApiError) => toast.error(err.message),
-  });
-
-  const connectSocialMutation = useMutation({
-    mutationFn: (platform: string) => 
-      apiFetch(`/social/${platform}/connect`, {
-        method: "POST",
-        body: JSON.stringify({ brandId, authCode: "dummy_code_from_oauth" })
-      }),
-    onSuccess: (data: any) => {
-      toast.success(`${data.message}`);
-      queryClient.invalidateQueries({ queryKey: ["social", brandId] });
-    },
-    onError: (err: ApiError) => toast.error(err.message),
-  });
-
-  if (isLoadingBrand) return <div className="flex h-48 justify-center items-center"><Spinner /></div>;
-  if (!brand) return <div className="text-center py-12 text-zinc-500">Brand not found</div>;
+  if (error || !brand) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[50vh] text-center space-y-4">
+        <p className="text-red-500">Error loading brand details.</p>
+        <Button onClick={() => router.push("/brands")} variant="outline">
+          Back to Brands
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-12">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">{brand.name}</h1>
-          <p className="text-zinc-500 text-sm">Brand Profile & Social Connections</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setIsEditing(!isEditing)}>
-            <Edit3 size={16} className="mr-2" />
-            {isEditing ? "Cancel Edit" : "Edit Profile"}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" asChild>
+            <Link href="/brands">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
           </Button>
-          <Button className="bg-red-600 text-white hover:bg-red-700 shadow-sm" onClick={() => {
-            if (confirm("Are you sure you want to delete this brand? All content will be lost.")) {
-              deleteMutation.mutate();
-            }
-          }} disabled={deleteMutation.isPending}>
-            <Trash2 size={16} className="mr-2" />
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+              {brand.name}
+              <Badge variant="secondary" className="ml-2">{brand.industry}</Badge>
+            </h1>
+            <p className="text-zinc-500">Manage brand settings and view linked assets.</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm">
+            <Edit className="h-4 w-4 mr-2" />
+            Edit
+          </Button>
+          <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50">
+            <Trash2 className="h-4 w-4 mr-2" />
             Delete
           </Button>
         </div>
@@ -132,59 +95,57 @@ export default function BrandDetailPage() {
         <div className="md:col-span-2 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Brand AI Profile</CardTitle>
+              <CardTitle>Brand Overview</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <h4 className="text-sm font-semibold text-zinc-900">Description</h4>
+                <p className="text-sm text-zinc-600 mt-1">{brand.description}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h4 className="text-sm font-semibold text-zinc-900">Tone of Voice</h4>
+                  <p className="text-sm text-zinc-600 mt-1">{brand.tone || "Not set"}</p>
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-zinc-900">Primary Language</h4>
+                  <p className="text-sm text-zinc-600 mt-1 uppercase">{brand.language || "EN"}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Connected Social Accounts</CardTitle>
+              <CardDescription>Accounts authorized to publish content on behalf of this brand.</CardDescription>
             </CardHeader>
             <CardContent>
-              {isEditing ? (
-                <form onSubmit={form.handleSubmit((d) => updateMutation.mutate(d))} className="space-y-4">
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Name</label>
-                      <Input {...form.register("name")} />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Industry</label>
-                      <Input {...form.register("industry")} />
-                    </div>
+              {!isConnected ? (
+                <div className="text-center py-8 text-sm text-zinc-500 border border-dashed rounded-md">
+                  No social accounts connected yet.
+                  <div className="mt-4">
+                    <Button variant="outline" onClick={handleConnect} disabled={isConnecting}>
+                      {isConnecting ? "Connecting..." : "Connect Account"}
+                    </Button>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Description</label>
-                    <Textarea {...form.register("description")} rows={3} />
-                  </div>
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Audience</label>
-                      <Input {...form.register("audience")} />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Tone</label>
-                      <Input {...form.register("tone")} />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Language</label>
-                      <Input {...form.register("language")} />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Goals (comma separated)</label>
-                      <Input {...form.register("goals")} />
-                    </div>
-                  </div>
-                  <Button type="submit" disabled={updateMutation.isPending}>
-                    {updateMutation.isPending ? <Spinner size={16} className="mr-2"/> : null}
-                    Save Changes
-                  </Button>
-                </form>
+                </div>
               ) : (
-                <div className="space-y-6">
-                  <div className="bg-zinc-50 p-4 rounded-md border text-sm text-zinc-700">
-                    <p className="font-semibold text-zinc-900 mb-1">Description</p>
-                    <p>{brand.description || "None"}</p>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 border rounded-md">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 bg-blue-100 text-blue-500 rounded-full flex items-center justify-center">
+                        <Twitter className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm text-zinc-900">Twitter (X)</p>
+                        <p className="text-xs text-zinc-500">@evolvix_ai</p>
+                      </div>
+                    </div>
+                    <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100">Connected</Badge>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div><span className="text-zinc-500 block">Industry</span><span className="font-medium">{brand.industry || "None"}</span></div>
-                    <div><span className="text-zinc-500 block">Tone</span><span className="font-medium">{brand.tone || "None"}</span></div>
-                    <div><span className="text-zinc-500 block">Audience</span><span className="font-medium">{brand.audience || "None"}</span></div>
-                    <div><span className="text-zinc-500 block">Language</span><span className="font-medium uppercase">{brand.language || "None"}</span></div>
+                  <div className="mt-4 text-center">
+                    <Button variant="outline" size="sm">Connect Another Account</Button>
                   </div>
                 </div>
               )}
@@ -195,49 +156,33 @@ export default function BrandDetailPage() {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Share2 size={18} />
-                Social Accounts
-              </CardTitle>
-              <CardDescription>Connect platforms to schedule posts.</CardDescription>
+              <CardTitle>Knowledge Base</CardTitle>
+              <CardDescription>Files and text used by AI to learn about your brand.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              {isLoadingSocial ? <Spinner /> : socialAccounts?.length === 0 ? (
-                <p className="text-sm text-zinc-500 border-l-2 border-zinc-200 pl-3">No connected accounts.</p>
-              ) : (
-                <ul className="space-y-3">
-                  {socialAccounts?.map(acc => (
-                    <li key={acc.id} className="flex justify-between items-center text-sm border-b pb-2">
-                      <div className="flex items-center gap-2 font-medium capitalize">
-                        {acc.platform === 'linkedin' && <span className="text-blue-600 font-bold">in</span>}
-                        {acc.platform === 'twitter' && <span className="text-sky-500 font-bold">𝕏</span>}
-                        {acc.platform === 'instagram' && <span className="text-pink-600 font-bold">ig</span>}
-                        {acc.platform === 'facebook' && <span className="text-blue-700 font-bold">f</span>}
-                        {acc.platform}
-                      </div>
-                      <span className="text-zinc-500 text-xs bg-zinc-100 px-2 py-0.5 rounded">Connected</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-
-              <div className="pt-4 space-y-2 border-t">
-                <p className="text-xs font-semibold text-zinc-500 uppercase">Simulate OAuth Connection</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button variant="outline" size="sm" onClick={() => connectSocialMutation.mutate("linkedin")} disabled={connectSocialMutation.isPending}>
-                    <span className="mr-2 text-blue-600 font-bold">in</span> LinkedIn
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => connectSocialMutation.mutate("twitter")} disabled={connectSocialMutation.isPending}>
-                    <span className="mr-2 text-sky-500 font-bold">𝕏</span> Twitter
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => connectSocialMutation.mutate("instagram")} disabled={connectSocialMutation.isPending}>
-                    <span className="mr-2 text-pink-600 font-bold">ig</span> Instagram
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => connectSocialMutation.mutate("facebook")} disabled={connectSocialMutation.isPending}>
-                    <span className="mr-2 text-blue-700 font-bold">f</span> Facebook
-                  </Button>
+            <CardContent>
+              {!isUploaded ? (
+                <div className="text-center py-6 text-sm text-zinc-500 border border-dashed rounded-md">
+                  No documents uploaded.
+                  <div className="mt-4">
+                    <Button variant="secondary" size="sm" onClick={handleUpload} disabled={isUploading}>
+                      {isUploading ? "Uploading..." : "Upload Data"}
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 border rounded-md bg-zinc-50">
+                    <div className="flex items-center gap-3">
+                      <FileText className="h-4 w-4 text-zinc-500" />
+                      <span className="text-sm font-medium text-zinc-700">brand_guidelines_2024.pdf</span>
+                    </div>
+                    <span className="text-xs text-zinc-500">1.2 MB</span>
+                  </div>
+                  <div className="text-center mt-4">
+                    <Button variant="secondary" size="sm">Upload More</Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

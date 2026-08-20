@@ -1,39 +1,38 @@
 "use client";
 
 import * as React from "react";
-import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import toast from "react-hot-toast";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft, Check, Copy, Save, Edit3 } from "lucide-react";
+import toast from "react-hot-toast";
 
 import { apiFetch, ApiError } from "@/lib/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Clock } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 
-export default function ContentEditorPage() {
+export default function ContentDetailsPage() {
   const params = useParams();
-  const contentId = params.id as string;
   const router = useRouter();
   const queryClient = useQueryClient();
-  
-  const [body, setBody] = React.useState("");
+  const contentId = params.id as string;
 
-  // Fetch specific content and its versions
-  const { data: content, isLoading } = useQuery({
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [editedBody, setEditedBody] = React.useState("");
+
+  const { data: content, isLoading, error } = useQuery({
     queryKey: ["content", contentId],
     queryFn: () => apiFetch<any>(`/content/${contentId}`),
   });
 
-  // Sync initial body state when data loads
   React.useEffect(() => {
-    if (content && !body) {
-      setBody(content.body);
+    if (content) {
+      setEditedBody(content.body);
     }
-  }, [content, body]);
+  }, [content]);
 
   const updateMutation = useMutation({
     mutationFn: (newBody: string) => 
@@ -42,9 +41,9 @@ export default function ContentEditorPage() {
         body: JSON.stringify({ body: newBody }),
       }),
     onSuccess: () => {
-      toast.success("Content saved!");
+      toast.success("Content updated successfully");
       queryClient.invalidateQueries({ queryKey: ["content", contentId] });
-      queryClient.invalidateQueries({ queryKey: ["contents"] });
+      setIsEditing(false);
     },
     onError: (err: ApiError) => toast.error(err.message),
   });
@@ -55,131 +54,123 @@ export default function ContentEditorPage() {
         method: "POST",
       }),
     onSuccess: () => {
-      toast.success("Content approved successfully!");
+      toast.success("Content approved for publishing");
       queryClient.invalidateQueries({ queryKey: ["content", contentId] });
-      queryClient.invalidateQueries({ queryKey: ["contents"] });
     },
     onError: (err: ApiError) => toast.error(err.message),
   });
 
-  if (isLoading) return <div className="flex justify-center p-12"><Spinner /></div>;
-  if (!content) return <div>Content not found</div>;
+  if (isLoading) {
+    return <div className="flex h-[50vh] items-center justify-center"><Spinner size={32} /></div>;
+  }
 
-  const isDraft = content.status === "DRAFT";
-  const hasChanges = body !== content.body;
+  if (error || !content) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[50vh] text-center space-y-4">
+        <p className="text-red-500">Error loading content details.</p>
+        <Button onClick={() => router.push("/content")} variant="outline">Back to Content</Button>
+      </div>
+    );
+  }
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(content.body);
+    toast.success("Copied to clipboard");
+  };
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
-      <div className="flex items-center gap-4 border-b pb-4">
-        <Button variant="ghost" size="icon" asChild className="h-8 w-8">
-          <Link href="/content"><ArrowLeft size={16} /></Link>
-        </Button>
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight">Content Editor</h1>
-            <Badge variant={isDraft ? "secondary" : "default"}>{content.status}</Badge>
-            <Badge variant="outline" className="uppercase">{content.platform}</Badge>
+    <div className="max-w-4xl mx-auto space-y-6 pb-12">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" asChild>
+            <Link href="/content">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+              Content Draft
+              <Badge variant={content.status === 'APPROVED' ? 'default' : 'secondary'} className="ml-2">
+                {content.status}
+              </Badge>
+            </h1>
+            <p className="text-zinc-500 text-sm">
+              Platform: <span className="font-medium uppercase">{content.platform}</span>
+            </p>
           </div>
-          <p className="text-sm text-zinc-500 mt-1">
-            Created on {new Date(content.createdAt).toLocaleString()}
-          </p>
         </div>
-        
-        <div className="ml-auto flex gap-2">
-          {isDraft && (
-            <Button 
-              variant="outline" 
-              onClick={() => approveMutation.mutate()}
-              disabled={approveMutation.isPending || hasChanges} // Must save before approving
-              className="text-green-600 border-green-600 hover:bg-green-50"
-            >
-              {approveMutation.isPending ? <Spinner size={16} className="mr-2" /> : null}
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleCopy}>
+            <Copy className="h-4 w-4 mr-2" />
+            Copy
+          </Button>
+          {content.status !== 'APPROVED' && (
+            <Button size="sm" onClick={() => approveMutation.mutate()} disabled={approveMutation.isPending}>
+              {approveMutation.isPending ? <Spinner size={16} className="mr-2" /> : <Check className="h-4 w-4 mr-2" />}
               Approve
             </Button>
           )}
-          <Button 
-            variant="secondary" 
-            onClick={() => setBody(content.body)}
-            disabled={!hasChanges || updateMutation.isPending}
-          >
-            Discard
-          </Button>
-          <Button 
-            onClick={() => updateMutation.mutate(body)}
-            disabled={!hasChanges || updateMutation.isPending || !isDraft}
-          >
-            {updateMutation.isPending ? <Spinner size={16} className="mr-2" /> : null}
-            Save Changes
-          </Button>
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Copy / Body</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Textarea 
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                className="min-h-[300px] font-sans text-base leading-relaxed p-4"
-                disabled={!isDraft} // Only drafts should be editable
-              />
-              {!isDraft && (
-                <p className="text-xs text-amber-600 mt-2">
-                  This content is {content.status} and can no longer be edited.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="lg:col-span-1 space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Clock size={18} className="text-zinc-500" />
-                Version History
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {content.contentVersions && content.contentVersions.length > 0 ? (
-                <div className="space-y-4">
-                  {/* Sort versions descending by creation date */}
-                  {[...content.contentVersions]
-                    .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                    .map((version: any, index: number) => (
-                    <div key={version.id} className="border-l-2 border-zinc-200 pl-4 py-1 relative">
-                      <div className="absolute w-2 h-2 rounded-full bg-zinc-300 -left-[5px] top-2" />
-                      <p className="text-xs font-semibold text-zinc-900">
-                        {index === 0 ? "Current Version" : `Version ${content.contentVersions.length - index}`}
-                      </p>
-                      <p className="text-xs text-zinc-500">
-                        {new Date(version.createdAt).toLocaleString()}
-                      </p>
-                      <p className="text-sm text-zinc-600 mt-1 line-clamp-2">
-                        {version.body}
-                      </p>
-                      {index !== 0 && isDraft && (
-                        <button 
-                          onClick={() => setBody(version.body)}
-                          className="text-xs text-blue-600 mt-1 hover:underline"
-                        >
-                          Restore this version
-                        </button>
-                      )}
-                    </div>
-                  ))}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Post Content</CardTitle>
+          {!isEditing && content.status !== 'APPROVED' && (
+            <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
+              <Edit3 className="h-4 w-4 mr-2" />
+              Edit
+            </Button>
+          )}
+        </CardHeader>
+        <CardContent className="grid md:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <h3 className="font-semibold text-sm text-zinc-500">Caption</h3>
+            {isEditing ? (
+              <div className="space-y-4">
+                <Textarea 
+                  value={editedBody}
+                  onChange={(e) => setEditedBody(e.target.value)}
+                  rows={10}
+                  className="font-mono text-sm"
+                />
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" size="sm" onClick={() => {
+                    setEditedBody(content.body);
+                    setIsEditing(false);
+                  }}>
+                    Cancel
+                  </Button>
+                  <Button size="sm" onClick={() => updateMutation.mutate(editedBody)} disabled={updateMutation.isPending}>
+                    {updateMutation.isPending ? <Spinner size={16} className="mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                    Save Changes
+                  </Button>
                 </div>
-              ) : (
-                <p className="text-sm text-zinc-500">No version history available.</p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+              </div>
+            ) : (
+              <div className="whitespace-pre-wrap font-mono text-sm bg-zinc-50 p-4 rounded-md border border-zinc-100 min-h-[200px]">
+                {content.body || "No text content generated."}
+              </div>
+            )}
+          </div>
+          <div className="space-y-4">
+            <h3 className="font-semibold text-sm text-zinc-500">Generated Media</h3>
+            {content.generatedMedia && content.generatedMedia.length > 0 ? (
+              <div className="border border-zinc-100 rounded-md overflow-hidden bg-zinc-50">
+                <img 
+                  src={content.generatedMedia[0].url} 
+                  alt="Generated content" 
+                  className="w-full h-auto object-contain"
+                />
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-[200px] border border-dashed rounded-md bg-zinc-50 text-zinc-400 text-sm">
+                No media generated for this post.
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

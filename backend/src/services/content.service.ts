@@ -43,7 +43,7 @@ export const getContents = async (orgId: string, brandId?: string, status?: stri
 export const getContentById = async (orgId: string, contentId: string) => {
   const content = await prisma.content.findFirst({
     where: { id: contentId, orgId },
-    include: { contentVersions: true },
+    include: { contentVersions: true, generatedMedia: true },
   });
 
   if (!content) {
@@ -96,6 +96,16 @@ export const generateContentFromAgent = async (orgId: string, brandId: string, p
     body: generatedBody,
     status: 'DRAFT'
   });
+
+  if (finalState.designData?.imageUrl) {
+    await prisma.generatedMedia.create({
+      data: {
+        orgId,
+        contentId: content.id,
+        url: finalState.designData.imageUrl,
+      }
+    });
+  }
 
   return {
     content,

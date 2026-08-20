@@ -40,6 +40,16 @@ export class DesignAgent extends BaseAgent {
     - "prompt" (the image generation prompt, if GENERATE_VISUAL)
     `;
 
+    // If the user provided a highly detailed topic/prompt, force GENERATE_VISUAL
+    if (state.topic && state.topic.length > 150) {
+      state.designData = {
+        action: "GENERATE_VISUAL",
+        reason: "User provided a detailed prompt",
+        prompt: state.topic
+      };
+      return state;
+    }
+
     const response = await gateway.chat(state.orgId, [{ role: 'system', content: prompt }]);
     
     try {

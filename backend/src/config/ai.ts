@@ -1,5 +1,5 @@
 import { env } from './env.config';
-import { AIGateway, OpenAICompatProvider, HuggingFaceProvider } from '../ai-gateway';
+import { AIGateway, OpenAICompatProvider, HuggingFaceProvider, PollinationsProvider } from '../ai-gateway';
 
 // Initialize providers
 // Groq (fast chat, free)
@@ -23,7 +23,7 @@ export const openRouterProvider = new OpenAICompatProvider(
   'openrouter',
   'https://openrouter.ai/api/v1',
   env.OPENROUTER_API_KEY || '',
-  'anthropic/claude-3-haiku' 
+  'meta-llama/llama-3.1-8b-instruct' 
 );
 
 // OpenAI (specifically for image generation via dall-e-3)
@@ -42,16 +42,27 @@ export const chatGptProvider = new OpenAICompatProvider(
   'gpt-4o-mini'
 );
 
+// Gemini Embeddings
+export const geminiEmbedProvider = new OpenAICompatProvider(
+  'gemini-embed',
+  'https://generativelanguage.googleapis.com/v1beta/openai',
+  env.GEMINI_API_KEY || '',
+  'text-embedding-004'
+);
+
 // HuggingFace (specifically for image generation via FLUX)
 export const hfProvider = new HuggingFaceProvider(env.HUGGINGFACE_API_KEY || '');
+
+// Pollinations (free, reliable fallback for image generation)
+export const pollinationsProvider = new PollinationsProvider();
 
 // Determine order based on compute mode (ChatGPT is primary for text)
 let providerOrder = [];
 if (env.AI_COMPUTE_MODE === 'GPU') {
-  providerOrder = [chatGptProvider, openRouterProvider, geminiProvider, groqProvider];
+  providerOrder = [chatGptProvider, openRouterProvider, geminiProvider, groqProvider, geminiEmbedProvider];
 } else {
-  providerOrder = [chatGptProvider, groqProvider, geminiProvider, openRouterProvider];
+  providerOrder = [chatGptProvider, groqProvider, geminiProvider, openRouterProvider, geminiEmbedProvider];
 }
 
-// Instantiate global gateway with FLUX (hfProvider) ONLY for images
-export const gateway = new AIGateway(providerOrder, [hfProvider]);
+// Instantiate global gateway with FLUX and Pollinations for images
+export const gateway = new AIGateway(providerOrder, [hfProvider, pollinationsProvider]);

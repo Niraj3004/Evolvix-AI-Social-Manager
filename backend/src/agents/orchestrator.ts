@@ -66,25 +66,14 @@ export class Orchestrator {
             const primaryHook = state.contentData?.hooks?.[0] || caption.substring(0, 30);
 
             // Build a visual prompt tailored for highly stylized digital agency graphics with integrated text
-            const imagePrompt = `A creative, highly engaging digital marketing agency social media poster. Style: Mixed media, vibrant colors, photo-manipulation, modern graphic design, similar to top-tier digital agency ads. Prominently feature this EXACT text in large, bold, integrated typography: "${primaryHook}". Visual concept should match the topic: ${postTopic}. DO NOT add any other text.`;
+            const imagePrompt = state.designData?.prompt || `A creative, highly engaging digital marketing agency social media poster. Style: Mixed media, vibrant colors, photo-manipulation, modern graphic design, similar to top-tier digital agency ads. Prominently feature this EXACT text in large, bold, integrated typography: "${primaryHook}". Visual concept should match the topic: ${postTopic}. DO NOT add any other text.`;
             const baseImageUrl = await gateway.generateImage(orgId, imagePrompt);
             console.log(`[Orchestrator] AI Image generated successfully.`);
 
-            // Brand the AI image by passing it into the Template Engine
-            console.log(`[Orchestrator] Applying brand overlay to AI image...`);
-            const finalImageUrl = await templateService.renderAndUpload(
-              postTopic, 
-              caption, 
-              brandColor, 
-              brandName, 
-              baseImageUrl, 
-              state.brandData?.logoUrl, 
-              state.brandData?.phone, 
-              state.brandData?.website
-            );
-            
-            state.designData.imageUrl = finalImageUrl;
-            console.log(`[Orchestrator] Branded AI image uploaded: ${finalImageUrl}`);
+            // Return the raw AI-generated base image without slapping an SVG overlay on top of it, 
+            // because FLUX natively generates highly detailed graphics that shouldn't be blocked.
+            state.designData.imageUrl = baseImageUrl;
+            console.log(`[Orchestrator] Raw AI image returned: ${baseImageUrl}`);
           }
           
           stepOutput = state.designData;
