@@ -7,13 +7,38 @@ export class DesignAgent extends BaseAgent {
   }
 
   async execute(state: AgentState): Promise<AgentState> {
-    const prompt = `You are a social media design director. Analyze this content to determine if it should use a standard branded template, or if it requires a completely new AI-generated visual.
+    // Get the visual concepts from StrategyAgent
+    const visualConcept = state.strategyData?.visual_concept || 'Professional layout';
+    const visualVibe = state.strategyData?.visual_vibe || 'Clean';
 
-Topic: ${state.topic}
-Platform: ${state.platform}
-Caption: ${state.contentData?.caption || ''}
+    // Get scraped trending styles from TrendAgent
+    const trendingColors = state.trendData?.primary_colors || 'brand colors';
+    const trendingFont = state.trendData?.font_style || 'modern font';
+    const trendingLayout = state.trendData?.layout_composition || 'clean layout';
+    const trendingVibe = state.trendData?.vibe || visualVibe;
 
-Output JSON with exact keys: 'action' (must be either "USE_TEMPLATE" or "GENERATE_VISUAL"), 'reason' (string).`;
+    const prompt = `You are an expert Social Media Art Director.
+    
+    The brand industry is: ${state.brandData?.industry || 'Unknown'}.
+    The topic is: ${state.topic}.
+    The overall vibe should be: ${visualVibe}.
+    
+    We have scraped trending designs for this industry. The current trends dictate:
+    - Primary Colors: ${trendingColors}
+    - Font Style: ${trendingFont}
+    - Layout Composition: ${trendingLayout}
+    - Aesthetic Vibe: ${trendingVibe}
+
+    We need to create a visual for this post.
+    Decide whether we should use a standard SVG template ('USE_TEMPLATE') or if we should generate a highly stylized AI image using FLUX ('GENERATE_VISUAL').
+    
+    If 'GENERATE_VISUAL', write an incredibly detailed text-to-image prompt for a photorealistic or high-end 3D marketing graphic, incorporating the exact trending colors (${trendingColors}) and styles (${trendingLayout}). Do not include text in the prompt unless it's a massive 3D typography hook.
+    
+    Output JSON with exact keys:
+    - "action" (must be "USE_TEMPLATE" or "GENERATE_VISUAL")
+    - "reason" (string explaining choice)
+    - "prompt" (the image generation prompt, if GENERATE_VISUAL)
+    `;
 
     const response = await gateway.chat(state.orgId, [{ role: 'system', content: prompt }]);
     

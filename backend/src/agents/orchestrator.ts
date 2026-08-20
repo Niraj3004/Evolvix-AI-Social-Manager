@@ -3,6 +3,7 @@ import { AgentState, BaseAgent } from './base.agent';
 import { researchAgent } from './research.agent';
 import { strategyAgent } from './strategy.agent';
 import { contentAgent } from './content.agent';
+import { trendAgent } from './trend.agent';
 import { designAgent } from './design.agent';
 import { visionAgent } from './vision.agent';
 import { templateService } from '../services/template.service';
@@ -13,6 +14,7 @@ export class Orchestrator {
     researchAgent,
     strategyAgent,
     contentAgent,
+    trendAgent,
     designAgent,
     visionAgent
   ];
@@ -33,17 +35,22 @@ export class Orchestrator {
       console.log(`[Orchestrator] Running ${agent.name}...`);
       
       try {
-        state = await agent.execute(state);
+        try {
+          state = await agent.execute(state);
+        } catch (error: any) {
+          console.error(`[Orchestrator] Warning: ${agent.name} failed, but continuing pipeline. Error: ${error.message}`);
+        }
 
         // Extract the specific output for logging based on agent name
-        let stepOutput = {};
+        let stepOutput: any = {};
         if (agent.name === 'ResearchAgent') stepOutput = state.researchData;
         if (agent.name === 'StrategyAgent') stepOutput = state.strategyData;
         if (agent.name === 'ContentAgent') stepOutput = state.contentData;
+        if (agent.name === 'TrendAgent') stepOutput = state.trendData;
         
         if (agent.name === 'DesignAgent') {
-          const brandColor = '#6366f1'; 
-          const brandName = 'EvolvixAI';
+          const brandColor = state.brandData?.colors ? (state.brandData.colors.includes('[') ? JSON.parse(state.brandData.colors)[0] : state.brandData.colors.split(',')[0].trim()) : '#6366f1'; 
+          const brandName = state.brandData?.name || 'EvolvixAI';
           const caption = state.contentData?.caption || 'New Post';
           const postTopic = state.topic;
 

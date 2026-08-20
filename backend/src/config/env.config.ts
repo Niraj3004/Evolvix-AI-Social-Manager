@@ -24,6 +24,7 @@ const envSchema = z.object({
   GEMINI_API_KEY: z.string().optional(),
   OPENROUTER_API_KEY: z.string().optional(),
   OPENAI_API_KEY: z.string().optional(),
+  HUGGINGFACE_API_KEY: z.string().optional(),
   AI_COMPUTE_MODE: z.enum(['CPU', 'GPU']).default('CPU'),
 });
 

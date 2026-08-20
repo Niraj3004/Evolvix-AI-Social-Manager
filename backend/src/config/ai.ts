@@ -1,5 +1,5 @@
 import { env } from './env.config';
-import { AIGateway, OpenAICompatProvider } from '../ai-gateway';
+import { AIGateway, OpenAICompatProvider, HuggingFaceProvider } from '../ai-gateway';
 
 // Initialize providers
 // Groq (fast chat, free)
@@ -7,16 +7,15 @@ export const groqProvider = new OpenAICompatProvider(
   'groq',
   'https://api.groq.com/openai/v1',
   env.GROQ_API_KEY || '',
-  'llama3-8b-8192'
+  'llama-3.1-8b-instant'
 );
 
 // Gemini (chat + vision + embeddings, free)
-// Note: Google supports OpenAI compatible endpoints via v1beta/openai
 export const geminiProvider = new OpenAICompatProvider(
   'gemini',
   'https://generativelanguage.googleapis.com/v1beta/openai',
   env.GEMINI_API_KEY || '',
-  'gemini-1.5-flash' // or 'gemini-1.5-pro' depending on needs
+  'gemini-1.5-flash' 
 );
 
 // OpenRouter (fallback/variety, optionally paid)
@@ -24,7 +23,7 @@ export const openRouterProvider = new OpenAICompatProvider(
   'openrouter',
   'https://openrouter.ai/api/v1',
   env.OPENROUTER_API_KEY || '',
-  'anthropic/claude-3-haiku:beta' // fallback example
+  'anthropic/claude-3-haiku' 
 );
 
 // OpenAI (specifically for image generation via dall-e-3)
@@ -35,15 +34,24 @@ export const openAiProvider = new OpenAICompatProvider(
   'dall-e-3'
 );
 
-// Determine order based on compute mode
+// ChatGPT (for fast text chat & prompt generation)
+export const chatGptProvider = new OpenAICompatProvider(
+  'openai-chat',
+  'https://api.openai.com/v1',
+  env.OPENAI_API_KEY || '',
+  'gpt-4o-mini'
+);
+
+// HuggingFace (specifically for image generation via FLUX)
+export const hfProvider = new HuggingFaceProvider(env.HUGGINGFACE_API_KEY || '');
+
+// Determine order based on compute mode (ChatGPT is primary for text)
 let providerOrder = [];
 if (env.AI_COMPUTE_MODE === 'GPU') {
-  // GPU mode prioritizes heavy/variety models
-  providerOrder = [openRouterProvider, geminiProvider, groqProvider];
+  providerOrder = [chatGptProvider, openRouterProvider, geminiProvider, groqProvider];
 } else {
-  // CPU mode prioritizes fast/free models
-  providerOrder = [groqProvider, geminiProvider, openRouterProvider];
+  providerOrder = [chatGptProvider, groqProvider, geminiProvider, openRouterProvider];
 }
 
-// Instantiate global gateway with OpenAI exclusively for images
-export const gateway = new AIGateway(providerOrder, [openAiProvider]);
+// Instantiate global gateway with FLUX (hfProvider) ONLY for images
+export const gateway = new AIGateway(providerOrder, [hfProvider]);

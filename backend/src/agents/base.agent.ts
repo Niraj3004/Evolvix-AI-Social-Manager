@@ -6,6 +6,7 @@ export interface AgentState {
   researchData?: any;
   strategyData?: any;
   contentData?: any;
+  trendData?: any;
   designData?: any;
   visionData?: {
     status: 'PASS' | 'FAIL';

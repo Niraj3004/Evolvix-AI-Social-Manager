@@ -97,6 +97,7 @@ export class AIGateway {
       if (!provider.generateImage) continue;
 
       try {
+        console.log(`[AIGateway] Generating image via ${provider.id}...`);
         const url = await provider.generateImage(prompt);
         
         // Save to cache (TTL 24 hours)
@@ -107,7 +108,7 @@ export class AIGateway {
         
         return url;
       } catch (error: any) {
-        console.warn(`Provider ${provider.id} failed for image gen: ${error.message}. Failing over...`);
+        console.error(`Provider ${provider.id} failed for image gen:`, error.message);
         lastError = error;
       }
     }
