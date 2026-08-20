@@ -2,7 +2,7 @@ import { prisma } from '../config/db';
 import { AgentState, BaseAgent } from './base.agent';
 import { researchAgent } from './research.agent';
 import { strategyAgent } from './strategy.agent';
-import { contentAgent } from './content.agent';
+import { contentAgent } from './langgraph.agent';
 import { trendAgent } from './trend.agent';
 import { designAgent } from './design.agent';
 import { visionAgent } from './vision.agent';

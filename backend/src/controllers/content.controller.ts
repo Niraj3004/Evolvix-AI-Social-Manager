@@ -76,6 +76,9 @@ export const scheduleContent = asyncErrorHandler(async (req: Request, res: Respo
   sendSuccess(res, content, 'Content scheduled successfully');
 });
 
+import { v4 as uuidv4 } from 'uuid';
+import redisClient from '../config/redis';
+
 export const predictEngagement = asyncErrorHandler(async (req: Request, res: Response) => {
   if (!req.orgId) throw new AppError('Organization context missing', 400);
 
@@ -86,23 +89,48 @@ export const predictEngagement = asyncErrorHandler(async (req: Request, res: Res
   }
 
   try {
-    const { env } = require('../config/env.config');
-    const mlResponse = await fetch(`${env.ML_URL}/predict/engagement`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        scheduledFor,
-        body,
-        platform,
-        content_type: content_type || 'post'
-      })
+    const requestId = uuidv4();
+    const postData = {
+      scheduledFor,
+      body,
+      platform,
+      content_type: content_type || 'post'
+    };
+
+    // RPC over Redis Pub/Sub
+    const predictionData = await new Promise((resolve, reject) => {
+      // 1. Subscribe to response channel
+      const subscriber = redisClient.duplicate();
+      
+      // Setup timeout
+      const timeout = setTimeout(async () => {
+        await subscriber.unsubscribe("ml.predict.response");
+        await subscriber.quit();
+        reject(new Error("Prediction request timed out"));
+      }, 10000); // 10s timeout
+
+      subscriber.connect().then(() => {
+        subscriber.subscribe("ml.predict.response", async (message) => {
+          const data = JSON.parse(message);
+          
+          if (data.requestId === requestId) {
+            clearTimeout(timeout);
+            await subscriber.unsubscribe("ml.predict.response");
+            await subscriber.quit();
+            
+            if (data.error) reject(new Error(data.error));
+            else resolve(data);
+          }
+        });
+
+        // 2. Publish request
+        redisClient.publish("ml.predict.request", JSON.stringify({
+          requestId,
+          post: postData
+        }));
+      });
     });
 
-    if (!mlResponse.ok) {
-      throw new Error(`ML Service Error: ${mlResponse.status}`);
-    }
-
-    const predictionData = await mlResponse.json();
     sendSuccess(res, predictionData, 'Engagement prediction generated successfully');
   } catch (error: any) {
     throw new AppError(`Failed to get prediction: ${error.message}`, 502);

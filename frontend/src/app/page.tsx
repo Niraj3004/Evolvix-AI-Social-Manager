@@ -1,3 +1,5 @@
+"use client";
+
 import * as React from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -13,10 +15,14 @@ import {
   Zap, 
   ShieldCheck,
   ChevronRight,
-  Menu
+  Menu,
+  Terminal,
+  ChevronDown
 } from "lucide-react";
 
 export default function LandingPage() {
+  const [activeTab, setActiveTab] = React.useState<"curl" | "js" | "python">("js");
+  const [openFaq, setOpenFaq] = React.useState<number | null>(0);
   return (
     <div className="min-h-screen bg-[#FDFDFC] font-sans selection:bg-black selection:text-white overflow-x-hidden text-zinc-950">
       
@@ -278,37 +284,44 @@ export default function LandingPage() {
           </div>
           
           <div className="relative">
-            {/* Floating UI Element */}
-            <div className="bg-zinc-50 border border-zinc-200 rounded-3xl p-4 shadow-xl aspect-square flex flex-col relative overflow-hidden">
-               <div className="flex items-center justify-between border-b border-zinc-200 pb-4 mb-4">
-                 <div className="font-semibold text-zinc-800 flex items-center gap-2">
-                   <div className="w-2 h-2 rounded-full bg-green-500" /> System Status
+            {/* Floating UI Element for AI */}
+            <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-6 shadow-2xl aspect-square flex flex-col relative overflow-hidden">
+               <div className="flex items-center justify-between border-b border-zinc-800 pb-4 mb-6">
+                 <div className="font-semibold text-zinc-200 flex items-center gap-2">
+                   <Sparkles size={16} className="text-indigo-400" /> ML Engagement Predictor
                  </div>
-                 <div className="text-xs font-mono text-zinc-400">v2.0.4</div>
+                 <div className="flex gap-2">
+                   <div className="w-3 h-3 rounded-full bg-red-500" />
+                   <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                   <div className="w-3 h-3 rounded-full bg-green-500" />
+                 </div>
                </div>
                
-               <div className="flex-1 flex flex-col gap-3">
-                 <div className="bg-white p-4 rounded-xl border border-zinc-100 shadow-sm flex justify-between items-center animate-fade-in-up">
-                   <div className="flex items-center gap-3">
-                     <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center font-bold">in</div>
-                     <span className="font-medium text-sm">LinkedIn Connected</span>
+               <div className="flex-1 flex flex-col gap-4 font-mono text-sm">
+                 <div className="text-zinc-500">
+                   {`>`} Analyzing draft content against 100M+ data points...
+                 </div>
+                 <div className="bg-zinc-900 border border-zinc-800 p-4 rounded-xl flex justify-between items-center animate-fade-in-up">
+                   <div className="flex flex-col gap-1">
+                     <span className="text-zinc-400 text-xs">PREDICTED ENGAGEMENT RATE</span>
+                     <span className="font-bold text-2xl text-green-400">4.8%</span>
                    </div>
-                   <CheckCircle2 size={16} className="text-green-500" />
+                   <BarChart3 size={32} className="text-zinc-700" />
                  </div>
 
-                 <div className="bg-white p-4 rounded-xl border border-zinc-100 shadow-sm flex justify-between items-center animate-fade-in-up animation-delay-100">
-                   <div className="flex items-center gap-3">
-                     <div className="w-8 h-8 bg-zinc-900 text-white rounded-lg flex items-center justify-center font-bold">𝕏</div>
-                     <span className="font-medium text-sm">Twitter Connected</span>
+                 <div className="bg-zinc-900 border border-zinc-800 p-4 rounded-xl flex justify-between items-center animate-fade-in-up animation-delay-100">
+                   <div className="flex flex-col gap-1">
+                     <span className="text-zinc-400 text-xs">RECOMMENDED POST TIME</span>
+                     <span className="font-bold text-lg text-blue-400">Tuesday, 9:15 AM EST</span>
                    </div>
-                   <CheckCircle2 size={16} className="text-green-500" />
+                   <Calendar size={24} className="text-zinc-700" />
                  </div>
 
-                 <div className="mt-auto bg-indigo-50 border border-indigo-100 p-4 rounded-xl flex items-start gap-3">
-                    <Sparkles size={18} className="text-indigo-600 shrink-0 mt-0.5" />
+                 <div className="mt-auto bg-indigo-500/10 border border-indigo-500/20 p-4 rounded-xl flex items-start gap-3 animate-fade-in-up animation-delay-200">
+                    <Sparkles size={18} className="text-indigo-400 shrink-0 mt-0.5" />
                     <div>
-                      <h5 className="text-sm font-bold text-indigo-900 mb-1">AI Agent Active</h5>
-                      <p className="text-xs text-indigo-700">Your brand profile has been analyzed. Ready to generate 14 posts.</p>
+                      <h5 className="font-bold text-indigo-300 mb-1">Optimization Suggestion</h5>
+                      <p className="text-indigo-400/80 leading-relaxed text-xs">Removing the 3rd hashtag and adding a question at the end will increase comments by an estimated 12%.</p>
                     </div>
                  </div>
                </div>
@@ -317,8 +330,107 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ----------------- DEVELOPER API ----------------- */}
+      <section className="py-32 bg-[#FDFDFC] px-6 border-b border-zinc-200">
+        <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
+          <div className="order-2 lg:order-1 relative">
+            <div className="bg-[#0D0D0D] border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl">
+              <div className="bg-[#1A1A1A] border-b border-zinc-800 px-4 py-3 flex items-center justify-between">
+                <div className="flex gap-4 text-xs font-medium text-zinc-400">
+                  <button 
+                    onClick={() => setActiveTab("js")}
+                    className={activeTab === "js" ? "text-white" : "hover:text-zinc-200"}
+                  >
+                    Node.js
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab("python")}
+                    className={activeTab === "python" ? "text-white" : "hover:text-zinc-200"}
+                  >
+                    Python
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab("curl")}
+                    className={activeTab === "curl" ? "text-white" : "hover:text-zinc-200"}
+                  >
+                    cURL
+                  </button>
+                </div>
+                <div className="flex gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-zinc-700" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-zinc-700" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-zinc-700" />
+                </div>
+              </div>
+              <div className="p-6 overflow-x-auto text-sm font-mono text-zinc-300">
+                {activeTab === "js" && (
+                  <pre><code>
+<span className="text-pink-400">import</span> {`{ Evolvix }`} <span className="text-pink-400">from</span> <span className="text-green-300">'@evolvix/sdk'</span>;{'\n\n'}
+<span className="text-blue-400">const</span> client = <span className="text-pink-400">new</span> Evolvix(process.env.EVOLVIX_KEY);{'\n\n'}
+<span className="text-blue-400">const</span> prediction = <span className="text-pink-400">await</span> client.ml.predictEngagement({`{`}{'\n'}
+  content: <span className="text-green-300">"Just launched our new feature!"</span>,{'\n'}
+  platform: <span className="text-green-300">"twitter"</span>,{'\n'}
+  audience: <span className="text-green-300">"tech_founders"</span>{'\n'}
+{`}`});{'\n\n'}
+console.log(prediction.estimatedReach);
+                  </code></pre>
+                )}
+                {activeTab === "python" && (
+                  <pre><code>
+<span className="text-pink-400">import</span> evolvix{'\n\n'}
+client = evolvix.Client(api_key=<span className="text-green-300">"EVOLVIX_API_KEY"</span>){'\n\n'}
+prediction = client.ml.predict_engagement({'\n'}
+    content=<span className="text-green-300">"Just launched our new feature!"</span>,{'\n'}
+    platform=<span className="text-green-300">"twitter"</span>,{'\n'}
+    audience=<span className="text-green-300">"tech_founders"</span>{'\n'}
+){'\n\n'}
+<span className="text-blue-400">print</span>(prediction.estimated_reach)
+                  </code></pre>
+                )}
+                {activeTab === "curl" && (
+                  <pre><code>
+curl -X POST https://api.evolvix.ai/v1/ml/predict \{'\n'}
+  -H <span className="text-green-300">"Authorization: Bearer $EVOLVIX_KEY"</span> \{'\n'}
+  -H <span className="text-green-300">"Content-Type: application/json"</span> \{'\n'}
+  -d <span className="text-green-300">'{`{
+    "content": "Just launched our new feature!",
+    "platform": "twitter",
+    "audience": "tech_founders"
+  }`}'</span>
+                  </code></pre>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="order-1 lg:order-2 space-y-8">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-100 border border-zinc-200 text-xs font-bold text-zinc-800 uppercase tracking-widest mb-6">
+                <Terminal size={14} /> Developer First
+              </div>
+              <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-zinc-950 mb-4">
+                Headless architecture. <br/> Unlimited power.
+              </h2>
+              <p className="text-lg text-zinc-500">
+                Don't want to use our dashboard? Evolvix provides a robust REST API so you can programmatically generate content, schedule posts, and train ML models directly from your own app.
+              </p>
+            </div>
+            <ul className="space-y-4">
+              <li className="flex items-center gap-3 text-zinc-700 font-medium">
+                <CheckCircle2 size={20} className="text-black" /> Generate posts programmatically
+              </li>
+              <li className="flex items-center gap-3 text-zinc-700 font-medium">
+                <CheckCircle2 size={20} className="text-black" /> Receive webhook callbacks on engagement
+              </li>
+              <li className="flex items-center gap-3 text-zinc-700 font-medium">
+                <CheckCircle2 size={20} className="text-black" /> Pipe analytics directly into Snowflake
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
       {/* ----------------- PRICING ----------------- */}
-      <section id="pricing" className="py-32 bg-[#FDFDFC] px-6">
+      <section id="pricing" className="py-32 bg-zinc-50 border-y border-zinc-200 px-6">
         <div className="max-w-6xl mx-auto space-y-16">
           <div className="text-center max-w-3xl mx-auto space-y-4">
             <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-zinc-950">
@@ -331,7 +443,7 @@ export default function LandingPage() {
 
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {/* Starter */}
-            <Card className="rounded-3xl border-zinc-200 shadow-sm flex flex-col">
+            <Card className="rounded-3xl border-zinc-200 shadow-sm flex flex-col bg-white">
               <CardContent className="p-8 flex-1 flex flex-col">
                 <h3 className="text-xl font-semibold mb-2">Starter</h3>
                 <div className="flex items-baseline gap-1 mb-6">
@@ -354,7 +466,7 @@ export default function LandingPage() {
             </Card>
 
             {/* Pro */}
-            <Card className="rounded-3xl border-black shadow-xl flex flex-col relative scale-105 z-10 bg-black text-white">
+            <Card className="rounded-3xl border-black shadow-2xl flex flex-col relative scale-105 z-10 bg-black text-white">
               <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest">
                 Most Popular
               </div>
@@ -380,7 +492,7 @@ export default function LandingPage() {
             </Card>
 
             {/* Enterprise */}
-            <Card className="rounded-3xl border-zinc-200 shadow-sm flex flex-col">
+            <Card className="rounded-3xl border-zinc-200 shadow-sm flex flex-col bg-white">
               <CardContent className="p-8 flex-1 flex flex-col">
                 <h3 className="text-xl font-semibold mb-2">Enterprise</h3>
                 <div className="flex items-baseline gap-1 mb-6">
@@ -400,6 +512,41 @@ export default function LandingPage() {
                 </Button>
               </CardContent>
             </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* ----------------- FAQ SECTION ----------------- */}
+      <section className="py-32 bg-[#FDFDFC] px-6">
+        <div className="max-w-3xl mx-auto space-y-12">
+          <div className="text-center space-y-4">
+             <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-zinc-950">
+              Frequently asked questions
+            </h2>
+          </div>
+          
+          <div className="space-y-4">
+            {[
+              { q: "How accurate is the ML Engagement Predictor?", a: "Our proprietary ML model is trained on over 100M social media posts across all major platforms. On average, our engagement predictions fall within an 8% margin of error of the final real-world result." },
+              { q: "Can I connect multiple accounts per platform?", a: "Yes. On the Pro and Enterprise plans, you can connect an unlimited number of accounts for each platform, making it perfect for managing multiple brands or client accounts." },
+              { q: "Does Evolvix post automatically for me?", a: "Only if you want it to! Evolvix has an auto-schedule feature, but by default, all AI-generated content is placed into a 'Drafts' queue requiring your manual approval before publishing." },
+              { q: "Is there a developer API available?", a: "Absolutely. Our REST API allows you to programmatically trigger AI generation, schedule posts, and pull analytics directly into your own internal dashboards." }
+            ].map((faq, index) => (
+              <div key={index} className="border border-zinc-200 rounded-2xl bg-white overflow-hidden transition-all">
+                <button 
+                  onClick={() => setOpenFaq(openFaq === index ? null : index)}
+                  className="flex items-center justify-between w-full p-6 text-left"
+                >
+                  <span className="font-semibold text-lg text-zinc-900">{faq.q}</span>
+                  <ChevronDown className={`transform transition-transform ${openFaq === index ? 'rotate-180' : ''}`} />
+                </button>
+                {openFaq === index && (
+                  <div className="px-6 pb-6 text-zinc-500 leading-relaxed">
+                    {faq.a}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       </section>

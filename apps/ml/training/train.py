@@ -3,6 +3,8 @@ import os
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from xgboost import XGBRegressor
+import mlflow
+import mlflow.xgboost
 
 # Add parent directory to path to import app modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -10,7 +12,6 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app.db import get_db
 from features import build_features
 from evaluation import evaluate_mae
-from registry import save_model_bundle, load_latest_bundle
 
 THRESHOLD_MAE = 5.0 # Example threshold
 
@@ -44,38 +45,39 @@ def get_training_data():
     return X, y
 
 def train_model():
-    print("Fetching and preparing data...")
-    X, y = get_training_data()
+    mlflow.set_experiment("Engagement_Prediction")
     
-    print(f"Data shape: {X.shape}")
-    
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    
-    print("Training XGBoost Regressor...")
-    model = XGBRegressor(n_estimators=100, learning_rate=0.1, random_state=42)
-    model.fit(X_train, y_train)
-    
-    print("Evaluating...")
-    y_pred = model.predict(X_test)
-    mae = evaluate_mae(y_test, y_pred)
-    
-    print(f"Model MAE: {mae:.4f}")
-    
-    latest_bundle = load_latest_bundle()
-    
-    if latest_bundle:
-        previous_mae = latest_bundle.get('metric', float('inf'))
-        print(f"Previous best MAE: {previous_mae:.4f}")
+    with mlflow.start_run():
+        print("Fetching and preparing data...")
+        X, y = get_training_data()
         
-        if mae >= previous_mae:
-            raise Exception(f"New model MAE ({mae:.4f}) is not better than the previous best ({previous_mae:.4f}). Keeping previous model.")
-            
-    if mae > THRESHOLD_MAE:
-         raise Exception(f"New model MAE ({mae:.4f}) did not meet the strict quality threshold ({THRESHOLD_MAE}). Model rejected.")
-    
-    print("Model passed all checks. Saving to registry...")
-    bundle_path = save_model_bundle(model, list(X.columns), mae)
-    print(f"Model successfully saved at {bundle_path}")
+        print(f"Data shape: {X.shape}")
+        
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        
+        n_estimators = 100
+        learning_rate = 0.1
+        mlflow.log_param("n_estimators", n_estimators)
+        mlflow.log_param("learning_rate", learning_rate)
+        
+        print("Training XGBoost Regressor...")
+        model = XGBRegressor(n_estimators=n_estimators, learning_rate=learning_rate, random_state=42)
+        model.fit(X_train, y_train)
+        
+        print("Evaluating...")
+        y_pred = model.predict(X_test)
+        mae = evaluate_mae(y_test, y_pred)
+        
+        print(f"Model MAE: {mae:.4f}")
+        mlflow.log_metric("mae", mae)
+                
+        if mae > THRESHOLD_MAE:
+             raise Exception(f"New model MAE ({mae:.4f}) did not meet the strict quality threshold ({THRESHOLD_MAE}). Model rejected.")
+        
+        print("Model passed quality checks. Saving to MLflow...")
+        mlflow.xgboost.log_model(model, "model")
+        mlflow.log_dict({"columns": list(X.columns)}, "model_metadata.json")
+        print(f"Model successfully saved in MLflow run: {mlflow.active_run().info.run_id}")
 
 if __name__ == "__main__":
     try:

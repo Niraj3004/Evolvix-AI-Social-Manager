@@ -35,7 +35,18 @@ export const handleWebhook = (req: Request, res: Response) => {
     
     console.log('[Webhook] Verified successfully:', payload.type);
 
-    // TODO: Handle specific webhook events (e.g., payment_intent.succeeded)
+    // Handle specific webhook events (e.g., payment_intent.succeeded)
+    if (payload.type === 'payment_intent.succeeded') {
+      const paymentIntentId = payload.data?.object?.id;
+      // In a real app we would map this back to our internal Payment model
+      // await prisma.payment.updateMany({
+      //   where: { transactionId: paymentIntentId },
+      //   data: { status: 'COMPLETED' }
+      // });
+      console.log(`[Webhook] Payment succeeded for ${paymentIntentId}`);
+    } else if (payload.type === 'payment_intent.payment_failed') {
+      console.log(`[Webhook] Payment failed: ${payload.data?.object?.id}`);
+    }
     
     return sendSuccess(res, null, 'Webhook processed successfully');
   } catch (err) {

@@ -12,10 +12,31 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.db import get_db
-from registry import load_latest_bundle
 from features import build_features
+import mlflow
+import mlflow.types
+import mlflow.xgboost
+import json
 
 app = FastAPI(title="Evolvix ML Service", version="2.0")
+
+def load_latest_bundle():
+    try:
+        mlflow.set_experiment("Engagement_Prediction")
+        runs = mlflow.search_runs(order_by=["start_time DESC"], max_results=1)
+        if not runs.empty:
+            run_id = runs.iloc[0].run_id
+            model = mlflow.xgboost.load_model(f"runs:/{run_id}/model")
+            
+            client = mlflow.tracking.MlflowClient()
+            local_path = client.download_artifacts(run_id, "model_metadata.json")
+            with open(local_path, "r") as f:
+                columns = json.load(f)["columns"]
+                
+            return {"model": model, "columns": columns, "version": run_id}
+    except Exception as e:
+        print(f"Error loading model from MLflow: {e}")
+    return None
 
 # Load model globally on startup
 model_bundle = load_latest_bundle()
