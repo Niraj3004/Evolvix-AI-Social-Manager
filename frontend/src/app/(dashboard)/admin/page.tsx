@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Badge } from "@/components/ui/badge";
-import { ShieldCheck, Users, CreditCard } from "lucide-react";
+import { ShieldCheck, Users, CreditCard, Activity } from "lucide-react";
 
 export default function AdminDashboardPage() {
   const queryClient = useQueryClient();
@@ -20,6 +20,14 @@ export default function AdminDashboardPage() {
     queryKey: ["admin-users"],
     queryFn: () => apiFetch<any[]>("/admin/users"),
     enabled: activeTab === "users",
+    retry: false
+  });
+
+  // Fetch Audit Logs
+  const { data: auditLogs, isLoading: isLoadingAudit, error: auditError } = useQuery({
+    queryKey: ["admin-audit"],
+    queryFn: () => apiFetch<any[]>("/admin/audit"),
+    enabled: activeTab === "audit",
     retry: false
   });
 
@@ -45,7 +53,7 @@ export default function AdminDashboardPage() {
   });
 
   // Since this is a super admin route, standard users will get a 403 Forbidden.
-  if (usersError?.message?.includes("Forbidden") || paymentsError?.message?.includes("Forbidden")) {
+  if (usersError?.message?.includes("Forbidden") || paymentsError?.message?.includes("Forbidden") || auditError?.message?.includes("Forbidden")) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] text-center space-y-4">
         <ShieldCheck className="h-16 w-16 text-red-500" />
@@ -76,6 +84,13 @@ export default function AdminDashboardPage() {
         >
           <Users size={16} />
           Users
+        </button>
+        <button 
+          onClick={() => setActiveTab("audit")}
+          className={`px-4 py-2 font-medium text-sm transition-colors flex items-center gap-2 ${activeTab === "audit" ? "border-b-2 border-zinc-900 text-zinc-900" : "text-zinc-500 hover:text-zinc-700"}`}
+        >
+          <Activity size={16} />
+          Audit Logs
         </button>
       </div>
 
@@ -175,6 +190,48 @@ export default function AdminDashboardPage() {
                             ))}
                           </div>
                         </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {activeTab === "audit" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>System Audit Logs</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoadingAudit ? (
+              <div className="flex justify-center py-8"><Spinner /></div>
+            ) : !auditLogs || auditLogs.length === 0 ? (
+              <div className="text-center py-8 text-zinc-500">No audit logs found.</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="text-xs text-zinc-500 uppercase bg-zinc-50 border-b">
+                    <tr>
+                      <th className="px-4 py-3">Timestamp</th>
+                      <th className="px-4 py-3">Organization</th>
+                      <th className="px-4 py-3">User ID</th>
+                      <th className="px-4 py-3">Action</th>
+                      <th className="px-4 py-3">Details</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {auditLogs.map((log) => (
+                      <tr key={log.id} className="border-b hover:bg-zinc-50">
+                        <td className="px-4 py-3 whitespace-nowrap">{new Date(log.createdAt).toLocaleString()}</td>
+                        <td className="px-4 py-3 font-medium">{log.organization?.name || log.orgId}</td>
+                        <td className="px-4 py-3 text-xs font-mono">{log.userId.split('-')[0]}...</td>
+                        <td className="px-4 py-3">
+                          <Badge variant="outline" className="bg-zinc-100">{log.action}</Badge>
+                        </td>
+                        <td className="px-4 py-3 text-xs text-zinc-600 truncate max-w-[200px]">{log.details || "-"}</td>
                       </tr>
                     ))}
                   </tbody>

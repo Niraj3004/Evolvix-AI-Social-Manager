@@ -1,140 +1,193 @@
 "use client";
 
 import * as React from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import toast from "react-hot-toast";
+
 import { apiFetch, ApiError } from "@/lib/api";
-import { useAuthStore } from "@/store/auth.store";
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Spinner } from "@/components/ui/spinner";
-import { Badge } from "@/components/ui/badge";
+import { Share2, Trash2, Edit3, Link as LinkIcon, Facebook, Twitter, Linkedin, Instagram } from "lucide-react";
 
-export default function BrandDashboardPage() {
+const brandSchema = z.object({
+  name: z.string().min(2, "Brand name must be at least 2 characters"),
+  industry: z.string().optional(),
+  description: z.string().optional(),
+  audience: z.string().optional(),
+  tone: z.string().optional(),
+  language: z.string(),
+  goals: z.string().optional(),
+});
+
+type BrandFormValues = z.infer<typeof brandSchema>;
+
+export default function BrandDetailPage() {
   const params = useParams();
-  const brandId = params.id as string;
+  const router = useRouter();
   const queryClient = useQueryClient();
-  const [docContent, setDocContent] = React.useState("");
+  const brandId = params.id as string;
 
-  // Fetch Brand Info
-  const { data: brand, isLoading } = useQuery({
+  const [isEditing, setIsEditing] = React.useState(false);
+
+  // Fetch Brand
+  const { data: brand, isLoading: isLoadingBrand } = useQuery({
     queryKey: ["brand", brandId],
     queryFn: () => apiFetch<any>(`/brands/${brandId}`),
   });
 
-  // Fetch connected social accounts
-  const { data: accounts } = useQuery({
-    queryKey: ["social-accounts", brandId],
+  // Fetch Social Accounts
+  const { data: socialAccounts, isLoading: isLoadingSocial } = useQuery({
+    queryKey: ["social", brandId],
     queryFn: () => apiFetch<any[]>(`/social/${brandId}`),
   });
 
-  // Document Upload Mutation
-  const addDocMutation = useMutation({
-    mutationFn: (content: string) => apiFetch(`/brands/${brandId}/documents`, {
-      method: "POST",
-      body: JSON.stringify({ content }),
-    }),
+  const form = useForm<BrandFormValues>({
+    resolver: zodResolver(brandSchema),
+    values: brand ? {
+      name: brand.name,
+      industry: brand.industry || "",
+      description: brand.description || "",
+      audience: brand.audience || "",
+      tone: brand.tone || "",
+      language: brand.language || "en",
+      goals: brand.goals ? brand.goals.join(", ") : "",
+    } : undefined,
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data: BrandFormValues) => 
+      apiFetch(`/brands/${brandId}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          ...data,
+          goals: data.goals ? data.goals.split(",").map(g => g.trim()) : []
+        })
+      }),
     onSuccess: () => {
-      toast.success("Document added to brand memory!");
-      setDocContent("");
+      toast.success("Brand updated!");
+      setIsEditing(false);
       queryClient.invalidateQueries({ queryKey: ["brand", brandId] });
+      queryClient.invalidateQueries({ queryKey: ["brands"] });
     },
     onError: (err: ApiError) => toast.error(err.message),
   });
 
-  // Asset Upload Mutation
-  const addAssetMutation = useMutation({
-    mutationFn: async (file: File) => {
-      const formData = new FormData();
-      formData.append("asset", file);
-      
-      const state = useAuthStore.getState();
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api"}/brands/${brandId}/assets`, {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${state.accessToken}` },
-        body: formData, // No Content-Type header so browser sets multipart boundary automatically
-      });
-      if (!res.ok) throw new Error("Failed to upload asset");
-      return res.json();
-    },
+  const deleteMutation = useMutation({
+    mutationFn: () => apiFetch(`/brands/${brandId}`, { method: "DELETE" }),
     onSuccess: () => {
-      toast.success("Asset uploaded successfully");
-      queryClient.invalidateQueries({ queryKey: ["brand", brandId] });
+      toast.success("Brand deleted");
+      queryClient.invalidateQueries({ queryKey: ["brands"] });
+      router.push("/brands");
     },
-    onError: (err: Error) => toast.error(err.message),
+    onError: (err: ApiError) => toast.error(err.message),
   });
 
-  // Connect Social Account (Mock flow for now, normally would redirect to OAuth)
   const connectSocialMutation = useMutation({
-    mutationFn: (platform: string) => apiFetch(`/social/${platform}/connect`, {
-      method: "POST",
-      body: JSON.stringify({ brandId, accountId: "mock_account_123", accessToken: "mock_token" }),
-    }),
-    onSuccess: () => {
-      toast.success("Social account connected!");
-      queryClient.invalidateQueries({ queryKey: ["social-accounts", brandId] });
+    mutationFn: (platform: string) => 
+      apiFetch(`/social/${platform}/connect`, {
+        method: "POST",
+        body: JSON.stringify({ brandId, authCode: "dummy_code_from_oauth" })
+      }),
+    onSuccess: (data) => {
+      toast.success(`${data.message}`);
+      queryClient.invalidateQueries({ queryKey: ["social", brandId] });
     },
     onError: (err: ApiError) => toast.error(err.message),
   });
 
-  if (isLoading) return <div className="flex justify-center p-12"><Spinner /></div>;
-  if (!brand) return <div>Brand not found</div>;
+  if (isLoadingBrand) return <div className="flex h-48 justify-center items-center"><Spinner /></div>;
+  if (!brand) return <div className="text-center py-12 text-zinc-500">Brand not found</div>;
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between border-b pb-4">
+    <div className="max-w-5xl mx-auto space-y-6 pb-12">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">{brand.name}</h1>
-          <p className="text-zinc-500">{brand.industry} · {brand.tone}</p>
+          <h1 className="text-2xl font-bold tracking-tight">{brand.name}</h1>
+          <p className="text-zinc-500 text-sm">Brand Profile & Social Connections</p>
         </div>
-        <Badge variant="outline">Org: {brand.orgId}</Badge>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setIsEditing(!isEditing)}>
+            <Edit3 size={16} className="mr-2" />
+            {isEditing ? "Cancel Edit" : "Edit Profile"}
+          </Button>
+          <Button variant="destructive" onClick={() => {
+            if (confirm("Are you sure you want to delete this brand? All content will be lost.")) {
+              deleteMutation.mutate();
+            }
+          }} disabled={deleteMutation.isPending}>
+            <Trash2 size={16} className="mr-2" />
+            Delete
+          </Button>
+        </div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        <div className="space-y-6">
+      <div className="grid md:grid-cols-3 gap-6">
+        <div className="md:col-span-2 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Brand Memory (RAG)</CardTitle>
-              <p className="text-sm text-zinc-500">Upload text guidelines for the AI to learn from.</p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Textarea 
-                placeholder="Paste brand guidelines, writing samples, or rules here..."
-                value={docContent}
-                onChange={(e) => setDocContent(e.target.value)}
-                rows={5}
-              />
-              <Button 
-                onClick={() => addDocMutation.mutate(docContent)}
-                disabled={!docContent.trim() || addDocMutation.isPending}
-              >
-                {addDocMutation.isPending ? <Spinner size={16} className="mr-2" /> : null}
-                Add to Memory
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Assets & Logos</CardTitle>
+              <CardTitle>Brand AI Profile</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-4">
-                <Input 
-                  type="file" 
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) addAssetMutation.mutate(file);
-                  }}
-                  disabled={addAssetMutation.isPending}
-                />
-                {addAssetMutation.isPending && <Spinner size={20} />}
-              </div>
+              {isEditing ? (
+                <form onSubmit={form.handleSubmit((d) => updateMutation.mutate(d))} className="space-y-4">
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Name</label>
+                      <Input {...form.register("name")} />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Industry</label>
+                      <Input {...form.register("industry")} />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Description</label>
+                    <Textarea {...form.register("description")} rows={3} />
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Audience</label>
+                      <Input {...form.register("audience")} />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Tone</label>
+                      <Input {...form.register("tone")} />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Language</label>
+                      <Input {...form.register("language")} />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Goals (comma separated)</label>
+                      <Input {...form.register("goals")} />
+                    </div>
+                  </div>
+                  <Button type="submit" disabled={updateMutation.isPending}>
+                    {updateMutation.isPending ? <Spinner size={16} className="mr-2"/> : null}
+                    Save Changes
+                  </Button>
+                </form>
+              ) : (
+                <div className="space-y-6">
+                  <div className="bg-zinc-50 p-4 rounded-md border text-sm text-zinc-700">
+                    <p className="font-semibold text-zinc-900 mb-1">Description</p>
+                    <p>{brand.description || "None"}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div><span className="text-zinc-500 block">Industry</span><span className="font-medium">{brand.industry || "None"}</span></div>
+                    <div><span className="text-zinc-500 block">Tone</span><span className="font-medium">{brand.tone || "None"}</span></div>
+                    <div><span className="text-zinc-500 block">Audience</span><span className="font-medium">{brand.audience || "None"}</span></div>
+                    <div><span className="text-zinc-500 block">Language</span><span className="font-medium uppercase">{brand.language || "None"}</span></div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -142,39 +195,49 @@ export default function BrandDashboardPage() {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Social Accounts</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Share2 size={18} />
+                Social Accounts
+              </CardTitle>
+              <CardDescription>Connect platforms to schedule posts.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex gap-4">
-                <Button 
-                  onClick={() => connectSocialMutation.mutate("meta")}
-                  disabled={connectSocialMutation.isPending}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  Connect Facebook
-                </Button>
-                <Button 
-                  onClick={() => connectSocialMutation.mutate("instagram")}
-                  disabled={connectSocialMutation.isPending}
-                  className="flex-1 bg-pink-600 hover:bg-pink-700 text-white"
-                >
-                  Connect Instagram
-                </Button>
-              </div>
-
-              {accounts && accounts.length > 0 && (
-                <div className="mt-6 border-t pt-4">
-                  <h4 className="text-sm font-semibold mb-2">Connected Accounts</h4>
-                  <ul className="space-y-2">
-                    {accounts.map(acc => (
-                      <li key={acc.id} className="flex items-center justify-between bg-zinc-50 p-2 rounded-md border">
-                        <span className="capitalize font-medium">{acc.platform}</span>
-                        <Badge variant="secondary">Connected</Badge>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+            <CardContent className="space-y-6">
+              {isLoadingSocial ? <Spinner /> : socialAccounts?.length === 0 ? (
+                <p className="text-sm text-zinc-500 border-l-2 border-zinc-200 pl-3">No connected accounts.</p>
+              ) : (
+                <ul className="space-y-3">
+                  {socialAccounts?.map(acc => (
+                    <li key={acc.id} className="flex justify-between items-center text-sm border-b pb-2">
+                      <div className="flex items-center gap-2 font-medium capitalize">
+                        {acc.platform === 'linkedin' && <Linkedin size={16} className="text-blue-600"/>}
+                        {acc.platform === 'twitter' && <Twitter size={16} className="text-sky-500"/>}
+                        {acc.platform === 'instagram' && <Instagram size={16} className="text-pink-600"/>}
+                        {acc.platform === 'facebook' && <Facebook size={16} className="text-blue-700"/>}
+                        {acc.platform}
+                      </div>
+                      <span className="text-zinc-500 text-xs bg-zinc-100 px-2 py-0.5 rounded">Connected</span>
+                    </li>
+                  ))}
+                </ul>
               )}
+
+              <div className="pt-4 space-y-2 border-t">
+                <p className="text-xs font-semibold text-zinc-500 uppercase">Simulate OAuth Connection</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button variant="outline" size="sm" onClick={() => connectSocialMutation.mutate("linkedin")} disabled={connectSocialMutation.isPending}>
+                    <Linkedin size={14} className="mr-2 text-blue-600" /> LinkedIn
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => connectSocialMutation.mutate("twitter")} disabled={connectSocialMutation.isPending}>
+                    <Twitter size={14} className="mr-2 text-sky-500" /> Twitter
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => connectSocialMutation.mutate("instagram")} disabled={connectSocialMutation.isPending}>
+                    <Instagram size={14} className="mr-2 text-pink-600" /> Instagram
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => connectSocialMutation.mutate("facebook")} disabled={connectSocialMutation.isPending}>
+                    <Facebook size={14} className="mr-2 text-blue-700" /> Facebook
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
